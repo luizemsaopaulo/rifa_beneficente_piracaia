@@ -73,3 +73,5 @@
   .admin-stat { padding: 14px; }
   .admin-stat strong { font-size: 1.6rem; }
 }
+
+.payment-badge--expired { background: #f3f4f6; color: #6b7280; }

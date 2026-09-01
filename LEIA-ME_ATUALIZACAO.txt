@@ -1,0 +1,61 @@
+RIFA BENEFICENTE PIRACAIA - VERSÃO PAGAMENTO DUPLO
+===================================================
+
+ALTERAÇÕES DESTA VERSÃO
+- Não aparece mais "Reservado" na página pública.
+- Público vê:
+  * Disponível
+  * Selecionado
+  * Pago
+  * um número em checkout fica apenas indisponível temporariamente.
+- Método de pagamento:
+  1. InfinitePay
+  2. Pix pessoal
+- InfinitePay:
+  * calcula R$ 10 x quantidade;
+  * abre checkout;
+  * não envia mensagem ao WhatsApp do organizador;
+  * pagamento aprovado é confirmado automaticamente pelo webhook.
+- Pix pessoal:
+  * chave: 11947406124
+  * favorecido: Waldemar Jose Luiz
+  * após iniciar, a página mostra chave, total e números;
+  * botão "Já paguei — enviar meus números no WhatsApp";
+  * WhatsApp do organizador: (11) 94740-6124;
+  * mensagem já vem pronta com nome, números, total e pedido;
+  * confirmação é manual no painel Admin.
+
+IMPORTANTE - COMO ATUALIZAR O SUPABASE
+1. Abra SQL Editor.
+2. Execute TODO o arquivo:
+   supabase/ATUALIZAR_PAGAMENTOS_PIX.sql
+
+IMPORTANTE - COMO ATUALIZAR A EDGE FUNCTION
+1. Supabase > Edge Functions > infinitepay-gateway > Code.
+2. Substitua TODO o código por:
+   supabase/functions/infinitepay-gateway/index.ts
+3. Deploy.
+4. Em Settings, mantenha Verify JWT with legacy secret DESLIGADO.
+
+GITHUB
+Depois, substitua no repositório os arquivos desta pasta, principalmente:
+- index.html
+- admin.html
+- css/
+- js/
+
+Os arquivos possuem ?v=20260901-2 para reduzir problema de cache do navegador/GitHub Pages.
+
+OBSERVAÇÃO SOBRE NÚMEROS TEMPORARIAMENTE INDISPONÍVEIS
+Não existe opção de "reservar".
+O bloqueio só acontece depois que a pessoa inicia um pagamento.
+- InfinitePay: prazo interno de até 2 horas.
+- Pix pessoal: prazo inicial de 30 minutos.
+- Ao tocar no botão de WhatsApp do Pix pessoal, o prazo é ampliado para 2 horas
+  para o organizador conseguir conferir e marcar como Pago.
+- Pagamentos abandonados expiram e os números voltam a ficar disponíveis.
+
+SORTEIO
+18/10/2026 às 20h
+Live no Instagram @TUDODEHELENA
+Prêmio: R$ 200 no Pix

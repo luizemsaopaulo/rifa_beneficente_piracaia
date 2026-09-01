@@ -16,6 +16,11 @@ window.RIFA_CONFIG = {
     handle: "luizwl",
     gatewayUrl: "https://qzpezwscmwfznzzbrxpb.supabase.co/functions/v1/infinitepay-gateway"
   },
+  personalPix: {
+    key: "11947406124",
+    owner: "Waldemar Jose Luiz",
+    whatsapp: "5511947406124"
+  },
   supabase: {
     url: "https://qzpezwscmwfznzzbrxpb.supabase.co",
     publishableKey: "sb_publishable_ZlViveYUmVgzUASUU7ETeg_AIRsZSbf"

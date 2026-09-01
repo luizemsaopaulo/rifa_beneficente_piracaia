@@ -16,6 +16,8 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const HANDLE = "luizwl";
 const UNIT_PRICE = 1000;
+const PERSONAL_PIX_KEY = "11947406124";
+const PERSONAL_PIX_OWNER = "Waldemar Jose Luiz";
 
 async function getOrder(orderNsu: string) {
   const { data, error } = await db
@@ -131,6 +133,42 @@ async function createPurchase(body: any) {
   }
 }
 
+
+async function createPersonalPix(body: any) {
+  const name = String(body.name || "").trim();
+  const whatsapp = String(body.whatsapp || "").replace(/\D/g, "");
+  const numbers = Array.isArray(body.numbers) ? body.numbers.map(Number) : [];
+
+  const { data, error } = await db.rpc("start_personal_pix_payment", {
+    p_name: name,
+    p_whatsapp: whatsapp,
+    p_numbers: numbers,
+  });
+
+  if (error) throw error;
+
+  return {
+    order_nsu: data.order_nsu,
+    amount_cents: data.amount_cents,
+    numbers: data.numbers,
+    expires_at: data.expires_at,
+    pix_key: PERSONAL_PIX_KEY,
+    pix_owner: PERSONAL_PIX_OWNER,
+  };
+}
+
+async function markPersonalPixContacted(orderNsu: string) {
+  if (!orderNsu) throw new Error("Pedido não informado.");
+
+  const { data, error } = await db.rpc("personal_pix_contacted", {
+    p_order_nsu: orderNsu,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ success: false, message: "Método não permitido." }, 405);
@@ -140,6 +178,14 @@ Deno.serve(async (req) => {
 
     if (body?.action === "create") {
       return json(await createPurchase(body));
+    }
+
+    if (body?.action === "create_personal_pix") {
+      return json(await createPersonalPix(body));
+    }
+
+    if (body?.action === "personal_pix_contacted") {
+      return json(await markPersonalPixContacted(String(body.order_nsu || "")));
     }
 
     if (body?.action === "confirm") {

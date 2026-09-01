@@ -80,9 +80,14 @@
   }
 
   function paymentInfo(r) {
-    const method = r.capture_method === "pix" ? "Pix" : (r.capture_method ? r.capture_method : "InfinitePay");
-    const receipt = r.receipt_url ? `<a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener noreferrer">Comprovante</a>` : "";
-    return `<div><strong>${escapeHtml(method)}</strong>${receipt ? `<br><small>${receipt}</small>` : ""}</div>`;
+    if (r.payment_provider === "personal_pix") {
+      return '<div><strong>Pix pessoal</strong><br><small>Confirmação manual</small></div>';
+    }
+    const method = r.capture_method === "pix" ? "Pix" : (r.capture_method ? r.capture_method : "Checkout");
+    const receipt = r.receipt_url
+      ? `<a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener noreferrer">Comprovante</a>`
+      : "";
+    return `<div><strong>InfinitePay • ${escapeHtml(method)}</strong>${receipt ? `<br><small>${receipt}</small>` : ""}</div>`;
   }
 
   async function rpc(name, args = {}) {
@@ -192,9 +197,9 @@
   }
 
   function statusBadge(status) {
-    return status === "paid"
-      ? '<span class="payment-badge payment-badge--paid">Pago</span>'
-      : '<span class="payment-badge payment-badge--pending">Em pagamento</span>';
+    if (status === "paid") return '<span class="payment-badge payment-badge--paid">Pago</span>';
+    if (status === "expired") return '<span class="payment-badge payment-badge--expired">Expirado</span>';
+    return '<span class="payment-badge payment-badge--pending">Em pagamento</span>';
   }
 
   function actionsHtml(r) {
@@ -238,7 +243,7 @@
           ${statusBadge(r.payment_status)}
         </div>
         <div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div>
-        <p><strong>${money(r.expected_amount_cents)}</strong> • InfinitePay</p>
+        <p><strong>${money(r.expected_amount_cents)}</strong> • ${r.payment_provider === "personal_pix" ? "Pix pessoal" : "InfinitePay"}</p>
         <small>Compra iniciada em ${escapeHtml(formatDate(r.created_at))}</small>
         ${actionsHtml(r)}
       </article>
@@ -359,10 +364,10 @@
         r.whatsapp,
         (r.numbers || []).map(pad).join(" "),
         money(r.expected_amount_cents),
-        r.payment_status === "paid" ? "Pago" : "Em pagamento",
+        r.payment_status === "paid" ? "Pago" : (r.payment_status === "expired" ? "Expirado" : "Em pagamento"),
         r.order_nsu || "",
         r.transaction_nsu || "",
-        r.capture_method || "InfinitePay",
+        r.payment_provider === "personal_pix" ? "Pix pessoal" : (r.capture_method || "InfinitePay"),
         formatDate(r.created_at),
         formatDate(r.paid_at),
         r.receipt_url || ""

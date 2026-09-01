@@ -202,3 +202,148 @@ code { padding: 2px 5px; border-radius: 5px; background: rgba(0,0,0,.06); }
   .payment-summary { grid-template-columns: 1fr; gap: 10px; }
   .payment-total { text-align: left; }
 }
+
+
+/* ===== PAGAMENTO DUPLO / DEPURAÇÃO DA PÁGINA PÚBLICA ===== */
+.number--unavailable {
+  color: #8a8a8a;
+  background: #eeeeef;
+  border-color: #dedee1;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.payment-methods {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 2px 0 0;
+  border: 0;
+}
+
+.payment-methods legend {
+  margin-bottom: 9px;
+  font-weight: 900;
+  font-size: .9rem;
+}
+
+.payment-method {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 11px;
+  align-items: center;
+  min-height: 72px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+
+.payment-method:hover {
+  border-color: #e7a1b2;
+}
+
+.payment-method--active {
+  border-color: var(--primary);
+  background: var(--soft);
+  box-shadow: 0 0 0 3px rgba(181, 21, 63, .06);
+}
+
+.payment-method input {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.payment-method__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #f5eff1;
+  font-size: 1.15rem;
+}
+
+.payment-method strong,
+.payment-method small {
+  display: block;
+}
+
+.payment-method small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.personal-pix-panel {
+  border: 2px solid #86efac;
+  background: #f7fff9;
+}
+
+.personal-pix-panel h2 {
+  margin-bottom: 17px;
+}
+
+.pix-payment-grid {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 18px;
+}
+
+.pix-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.pix-details > div {
+  padding: 13px;
+  border: 1px solid #d7eee0;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.pix-details span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+.pix-details strong {
+  word-break: break-word;
+}
+
+.pix-actions {
+  display: grid;
+  align-content: center;
+  gap: 9px;
+}
+
+.button--whatsapp {
+  background: #166534;
+  color: #fff;
+}
+
+.pix-note {
+  margin: 15px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: .84rem;
+}
+
+@media (max-width: 720px) {
+  .pix-payment-grid,
+  .pix-details {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-method {
+    grid-template-columns: auto auto 1fr;
+  }
+}

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#981b39">
   <meta name="description" content="Rifa beneficente com 200 números para ajudar no reparo do telhado após o temporal em Piracaia-SP. Prêmio de R$ 200 via Pix.">
   <title>Rifa Beneficente • Ajude no telhado</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20260901-2">
 </head>
 <body>
   <header class="hero">
@@ -45,7 +45,7 @@
 
   <main class="shell main">
     <section id="paymentStatusCard" class="payment-status-card hidden" aria-live="polite">
-      <span class="kicker">PAGAMENTO INFINITEPAY</span>
+      <span class="kicker">SITUAÇÃO DO PAGAMENTO</span>
       <h2 id="paymentStatusTitle">Verificando pagamento...</h2>
       <p id="paymentStatusText">Aguarde enquanto consultamos a situação do seu pagamento.</p>
       <div class="payment-status-actions">
@@ -93,16 +93,16 @@
       </div>
 
       <div class="stats">
-        <div class="stat stat--available"><span>Disponíveis</span><strong id="availableCount">200</strong></div>
-        <div class="stat stat--pending"><span>Em pagamento</span><strong id="pendingCount">0</strong></div>
+        <div class="stat stat--available"><span>Disponíveis agora</span><strong id="availableCount">200</strong></div>
         <div class="stat stat--paid"><span>Pagos</span><strong id="paidCount">0</strong></div>
+        <div class="stat"><span>Valor por número</span><strong>R$ 10</strong></div>
         <div class="stat"><span>Total</span><strong>200</strong></div>
       </div>
 
       <div class="progress">
         <div id="progressBar" class="progress__bar"></div>
       </div>
-      <small id="progressText" class="progress__text">0 de 200 números já escolhidos.</small>
+      <small id="progressText" class="progress__text">0 de 200 números pagos.</small>
     </section>
 
     <section class="card">
@@ -117,7 +117,6 @@
       <div class="legend">
         <span><i class="dot dot--available"></i>Disponível</span>
         <span><i class="dot dot--selected"></i>Selecionado</span>
-        <span><i class="dot dot--pending"></i>Em pagamento</span>
         <span><i class="dot dot--paid"></i>Pago</span>
       </div>
 
@@ -152,13 +151,34 @@
             </div>
           </div>
 
+          <fieldset class="payment-methods">
+            <legend>Método de pagamento</legend>
+
+            <label class="payment-method payment-method--active" id="methodInfiniteCard">
+              <input type="radio" name="paymentMethod" value="infinitepay" checked>
+              <span class="payment-method__icon">⚡</span>
+              <span>
+                <strong>InfinitePay</strong>
+                <small>Pagamento online. Após a aprovação, seus números são confirmados automaticamente.</small>
+              </span>
+            </label>
+
+            <label class="payment-method" id="methodPersonalCard">
+              <input type="radio" name="paymentMethod" value="personal_pix">
+              <span class="payment-method__icon">◆</span>
+              <span>
+                <strong>Pix pessoal</strong>
+                <small>Faça o Pix e depois envie os números escolhidos pelo WhatsApp para conferência.</small>
+              </span>
+            </label>
+          </fieldset>
+
           <button id="purchaseButton" class="button button--primary button--large" type="submit">
             Escolha seus números
           </button>
 
-          <p class="form-help">
-            Cada número custa <strong>R$ 10,00</strong>. Ao clicar para comprar, você é direcionado imediatamente
-            ao checkout seguro da <strong>InfinitePay</strong>. O número fica <strong>Em pagamento</strong> durante o checkout e vira <strong>Pago</strong> após a aprovação.
+          <p class="form-help" id="paymentHelp">
+            Cada número custa <strong>R$ 10,00</strong>. Pela InfinitePay, o pagamento é identificado automaticamente.
           </p>
         </form>
       </section>
@@ -168,7 +188,7 @@
         <h2>Informações do sorteio</h2>
         <dl>
           <div><dt>Valor</dt><dd>R$ 10 por número</dd></div>
-          <div><dt>Pagamento</dt><dd>InfinitePay</dd></div>
+          <div><dt>Pagamento</dt><dd>InfinitePay ou Pix pessoal</dd></div>
           <div><dt>Prêmio</dt><dd>R$ 200 via Pix</dd></div>
           <div><dt>Data</dt><dd>18/10/2026</dd></div>
           <div><dt>Horário</dt><dd>20h</dd></div>
@@ -181,16 +201,44 @@
       </aside>
     </section>
 
-    <section class="card">
-      <div class="section-head">
-        <div>
-          <span class="kicker">NÚMEROS INDISPONÍVEIS</span>
-          <h2>Em pagamento e pagos</h2>
+
+
+    <section id="personalPixPanel" class="card personal-pix-panel hidden" aria-live="polite">
+      <span class="kicker">PIX PESSOAL</span>
+      <h2>Finalize o pagamento pelo Pix</h2>
+
+      <div class="pix-payment-grid">
+        <div class="pix-details">
+          <div>
+            <span>Chave Pix</span>
+            <strong id="personalPixKey">11947406124</strong>
+          </div>
+          <div>
+            <span>Favorecido</span>
+            <strong id="personalPixOwner">Waldemar Jose Luiz</strong>
+          </div>
+          <div>
+            <span>Valor</span>
+            <strong id="personalPixAmount">R$ 0,00</strong>
+          </div>
+          <div>
+            <span>Números</span>
+            <strong id="personalPixNumbers">—</strong>
+          </div>
+        </div>
+
+        <div class="pix-actions">
+          <button id="copyPixKeyBtn" class="button button--soft button--large" type="button">Copiar chave Pix</button>
+          <button id="sendWhatsappBtn" class="button button--whatsapp button--large" type="button">
+            Já paguei — enviar meus números no WhatsApp
+          </button>
         </div>
       </div>
-      <div id="unavailableList" class="chip-list">
-        <span class="muted">Nenhum número escolhido ainda.</span>
-      </div>
+
+      <p class="pix-note">
+        Depois de fazer o Pix, use o botão do WhatsApp. A mensagem já vai com seu nome, os números escolhidos,
+        o valor e o código do pedido. Após a conferência, o organizador marca os números como <strong>Pagos</strong>.
+      </p>
     </section>
 
     <section id="setupWarning" class="setup-warning hidden">
@@ -210,7 +258,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=20260901-2"></script>
+  <script src="js/app.js?v=20260901-2"></script>
 </body>
 </html>
