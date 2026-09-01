@@ -1,0 +1,23 @@
+# Senhas, tokens e chaves
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+local.properties
+credentials.json
+secrets.*
+
+# Dependencias e caches
+node_modules/
+.gradle/
+__pycache__/
+*.pyc
+
+# Arquivos do Windows
+Thumbs.db
+Desktop.ini

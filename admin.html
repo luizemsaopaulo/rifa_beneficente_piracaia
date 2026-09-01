@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#18181b">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Painel Admin • Rifa Beneficente</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+  <header class="admin-topbar">
+    <div class="shell admin-topbar__inner">
+      <div>
+        <span class="eyebrow">PAINEL DO ORGANIZADOR</span>
+        <h1>Rifa Beneficente</h1>
+      </div>
+      <a href="index.html" class="button button--soft">← Ver página pública</a>
+    </div>
+  </header>
+
+  <main class="shell admin-main">
+    <section id="loginCard" class="card login-card">
+      <span class="kicker">ACESSO PROTEGIDO</span>
+      <h2>Entrar no painel</h2>
+      <p>A senha é validada no Supabase e não fica gravada no JavaScript do site.</p>
+      <form id="adminLoginForm" class="admin-login-form">
+        <label>
+          Senha do organizador
+          <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Digite sua senha" required>
+        </label>
+        <button class="button button--primary button--large" type="submit">Entrar</button>
+      </form>
+      <div id="adminSetupWarning" class="setup-warning hidden">
+        <strong>Banco ainda não instalado</strong>
+        <p>Execute <code>supabase/INSTALAR_SUPABASE.sql</code> no SQL Editor.</p>
+      </div>
+    </section>
+
+    <div id="adminPanel" class="hidden">
+      <section class="admin-heading">
+        <div>
+          <span class="kicker">VISÃO GERAL</span>
+          <h2>Controle da rifa</h2>
+          <p>Dados atualizados diretamente do Supabase.</p>
+        </div>
+        <div class="admin-heading__actions">
+          <button id="refreshAdminBtn" class="button button--soft" type="button">↻ Atualizar</button>
+          <button id="logoutBtn" class="button button--dark" type="button">Sair</button>
+        </div>
+      </section>
+
+      <section class="admin-stats-grid">
+        <div class="admin-stat"><span>Disponíveis</span><strong id="adminAvailable">0</strong><small>Números que faltam vender</small></div>
+        <div class="admin-stat"><span>Reservados</span><strong id="adminReserved">0</strong><small>Aguardando pagamento</small></div>
+        <div class="admin-stat"><span>Pagos</span><strong id="adminPaid">0</strong><small>Participam do sorteio</small></div>
+        <div class="admin-stat"><span>Compradores</span><strong id="adminBuyers">0</strong><small>Reservas cadastradas</small></div>
+      </section>
+
+      <section class="card sales-control">
+        <div>
+          <span class="kicker">VENDAS</span>
+          <h2 id="salesStatusTitle">Vendas abertas</h2>
+          <p id="salesStatusText">O público ainda pode reservar números.</p>
+        </div>
+        <button id="toggleSalesBtn" class="button button--danger" type="button">Fechar vendas</button>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <div>
+            <span class="kicker">NÚMEROS QUE FALTAM</span>
+            <h2>Disponíveis para venda</h2>
+          </div>
+          <strong id="availableHeadline">0 disponíveis</strong>
+        </div>
+        <div id="availableNumbersList" class="chip-list admin-available-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <div>
+            <span class="kicker">MAPA DOS 200 NÚMEROS</span>
+            <h2>Situação de cada número</h2>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="dot dot--available"></i>Disponível</span>
+          <span><i class="dot dot--reserved"></i>Reservado</span>
+          <span><i class="dot dot--paid"></i>Pago</span>
+        </div>
+        <div id="adminNumberGrid" class="number-grid number-grid--admin"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head buyer-head">
+          <div>
+            <span class="kicker">COMPRADORES</span>
+            <h2>Reservas e pagamentos</h2>
+          </div>
+          <div class="buyer-tools">
+            <input id="buyerSearch" type="search" placeholder="Buscar nome, WhatsApp ou número">
+            <select id="buyerFilter" aria-label="Filtrar reservas">
+              <option value="all">Todos</option>
+              <option value="reserved">Aguardando pagamento</option>
+              <option value="paid">Pagos</option>
+            </select>
+            <button id="exportCsvBtn" class="button button--dark" type="button">Exportar CSV</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="buyer-table">
+            <thead>
+              <tr>
+                <th>Comprador</th>
+                <th>WhatsApp</th>
+                <th>Números</th>
+                <th>Status</th>
+                <th>Data</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="buyerTableBody"></tbody>
+          </table>
+        </div>
+        <div id="buyerCards" class="buyer-cards"></div>
+      </section>
+
+      <section class="card draw-card">
+        <div class="section-head">
+          <div>
+            <span class="kicker">SORTEIO</span>
+            <h2>18/10/2026 às 20h • Instagram @TUDODEHELENA</h2>
+          </div>
+        </div>
+
+        <div id="officialWinner" class="official-winner hidden">
+          <span>🏆 VENCEDOR OFICIAL</span>
+          <strong id="officialWinnerNumber">000</strong>
+          <h3 id="officialWinnerName"></h3>
+          <p id="officialWinnerPhone"></p>
+          <small id="officialWinnerDate"></small>
+        </div>
+
+        <div id="drawControls">
+          <p>
+            O sorteio oficial usa apenas os números com status <strong>Pago</strong>.
+            O servidor só libera o sorteio a partir de 18/10/2026 às 20h e grava o resultado definitivamente.
+          </p>
+
+          <div class="draw-actions">
+            <button id="simulateDrawBtn" class="button button--soft" type="button">Testar animação (não salva)</button>
+            <div id="simulationResult" class="simulation-result hidden"></div>
+          </div>
+
+          <label class="draw-confirm">
+            Para liberar o botão oficial, digite <strong>SORTEAR</strong>
+            <input id="drawConfirmInput" autocomplete="off" placeholder="SORTEAR">
+          </label>
+          <button id="officialDrawBtn" class="button button--winner button--large" type="button" disabled>
+            🎉 Realizar sorteio oficial
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

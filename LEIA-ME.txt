@@ -1,0 +1,73 @@
+RIFA BENEFICENTE PIRACAIA - PROJETO COMPLETO
+===============================================
+
+PRÊMIO
+R$ 200 via Pix
+
+NÚMEROS
+001 a 200
+
+SORTEIO
+18/10/2026 às 20h
+Ao vivo no Instagram @TUDODEHELENA
+https://www.instagram.com/TUDODEHELENA/
+
+REPORTAGENS
+G1:
+https://g1.globo.com/sp/vale-do-paraiba-regiao/noticia/2026/09/01/temporal-com-granizo-gigante-destelha-mais-de-400-casas-e-destroi-carros-em-piracaia-sp.ghtml
+
+Brasil Urgente:
+https://www.youtube.com/watch?v=E1zrlKCCSYE
+
+ARQUIVOS PRINCIPAIS
+- index.html ............ página pública
+- admin.html ............ painel do organizador
+- css/styles.css ........ visual público
+- css/admin.css ......... visual administrativo
+- js/config.js .......... URL + publishable key do Supabase
+- js/app.js ............. reservas e tempo real
+- js/admin.js ........... compradores, pagamentos e sorteio
+- supabase/INSTALAR_SUPABASE.sql ... banco, RLS, RPCs e Realtime
+- ABRIR_RIFA.bat ........ abre o site localmente
+- ABRIR_ADMIN.bat ....... abre o painel localmente
+
+IMPORTANTE - PRIMEIRA INSTALAÇÃO
+1. Entre no Supabase.
+2. Abra SQL Editor.
+3. Cole TODO o conteúdo de:
+   supabase/INSTALAR_SUPABASE.sql
+4. Execute.
+5. Depois abra ABRIR_RIFA.bat.
+
+SEGURANÇA
+- A publishable key pode ficar no frontend.
+- NÃO existe service_role key no projeto.
+- Nome e WhatsApp dos compradores ficam na tabela reservations e NÃO possuem
+  policy pública de leitura.
+- O público só lê a situação dos números e o estado público da rifa.
+- As gravações são feitas por RPC com validações e bloqueio de concorrência.
+- A senha administrativa não está em js/config.js.
+- O arquivo SQL contém somente o HASH SHA-256 da senha, não a senha em texto.
+
+PAINEL ADMIN
+- números disponíveis (os que faltam)
+- reservados
+- pagos
+- compradores
+- busca por nome, WhatsApp e número
+- confirmar/desfazer pagamento
+- cancelar reserva e liberar os números
+- fechar/reabrir vendas
+- exportar compradores em CSV
+- mapa dos 200 números
+- simulação do sorteio sem salvar
+- sorteio oficial somente a partir de 18/10/2026 às 20h
+- vencedor oficial gravado no banco, impedindo segundo sorteio
+
+OBSERVAÇÃO
+O valor cobrado por número não foi colocado porque ainda não foi informado.
+O sistema já controla a situação Reservado/Pago independentemente do valor.
+
+ABRIR LOCALMENTE
+Dê dois cliques em ABRIR_RIFA.bat.
+Se Python estiver instalado, será usado http://localhost:8080.

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#981b39">
+  <meta name="description" content="Rifa beneficente com 200 números para ajudar no reparo do telhado após o temporal em Piracaia-SP. Prêmio de R$ 200 via Pix.">
+  <title>Rifa Beneficente • Ajude no telhado</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="shell hero__grid">
+      <div>
+        <span class="eyebrow">❤️ RIFA BENEFICENTE • PIRACAIA-SP</span>
+        <h1>Ajude no reparo do telhado da minha mãe</h1>
+        <p class="hero__lead">
+          O forte temporal com granizo em Piracaia danificou as telhas da casa da minha mãe.
+          Criamos esta rifa para ajudar a arrecadar o valor necessário para o conserto.
+        </p>
+
+        <div class="hero__facts">
+          <div class="fact"><span>Prêmio</span><strong>R$ 200 no Pix</strong></div>
+          <div class="fact"><span>Números</span><strong>001 a 200</strong></div>
+          <div class="fact"><span>Sorteio</span><strong>18/10/2026 • 20h</strong></div>
+        </div>
+      </div>
+
+      <aside class="live-card">
+        <span class="live-pill">🔴 AO VIVO</span>
+        <h2>Sorteio pelo Instagram</h2>
+        <p>Domingo, <strong>18 de outubro de 2026, às 20h</strong>.</p>
+        <a href="https://www.instagram.com/TUDODEHELENA/" target="_blank" rel="noopener noreferrer" class="instagram-link">@TUDODEHELENA</a>
+
+        <div class="countdown" aria-label="Contagem regressiva para o sorteio">
+          <div><strong id="countDays">--</strong><span>dias</span></div>
+          <div><strong id="countHours">--</strong><span>horas</span></div>
+          <div><strong id="countMinutes">--</strong><span>min</span></div>
+          <div><strong id="countSeconds">--</strong><span>seg</span></div>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <main class="shell main">
+    <section id="winnerPublic" class="winner-public hidden">
+      <span>🎉 RESULTADO OFICIAL</span>
+      <strong id="winnerPublicNumber">000</strong>
+      <p>Sorteio realizado ao vivo pela página <a href="https://www.instagram.com/TUDODEHELENA/" target="_blank" rel="noopener noreferrer">@TUDODEHELENA</a>.</p>
+    </section>
+
+    <section class="card story">
+      <div class="story__icon">🏠</div>
+      <div>
+        <span class="kicker">POR QUE ESTAMOS FAZENDO ESTA AÇÃO?</span>
+        <h2>Temporal com granizo em Piracaia</h2>
+        <p>
+          A ação é beneficente e foi criada após o temporal que atingiu Piracaia-SP.
+          Para dar transparência ao motivo da arrecadação, você pode conferir as reportagens abaixo.
+        </p>
+
+        <div class="report-links">
+          <a href="https://g1.globo.com/sp/vale-do-paraiba-regiao/noticia/2026/09/01/temporal-com-granizo-gigante-destelha-mais-de-400-casas-e-destroi-carros-em-piracaia-sp.ghtml" target="_blank" rel="noopener noreferrer">
+            <span>📰</span>
+            <div><strong>Reportagem do G1</strong><small>Temporal com granizo em Piracaia</small></div>
+          </a>
+          <a href="https://www.youtube.com/watch?v=E1zrlKCCSYE" target="_blank" rel="noopener noreferrer">
+            <span>▶️</span>
+            <div><strong>Brasil Urgente</strong><small>Chuva de granizo destrói carros e telhados</small></div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-panel card">
+      <div class="status-panel__head">
+        <div>
+          <span class="kicker">ACOMPANHAMENTO EM TEMPO REAL</span>
+          <h2>Andamento da rifa</h2>
+        </div>
+        <span id="connectionBadge" class="connection-badge">Conectando...</span>
+      </div>
+
+      <div class="stats">
+        <div class="stat stat--available"><span>Disponíveis</span><strong id="availableCount">200</strong></div>
+        <div class="stat stat--reserved"><span>Reservados</span><strong id="reservedCount">0</strong></div>
+        <div class="stat stat--paid"><span>Pagos</span><strong id="paidCount">0</strong></div>
+        <div class="stat"><span>Total</span><strong>200</strong></div>
+      </div>
+
+      <div class="progress">
+        <div id="progressBar" class="progress__bar"></div>
+      </div>
+      <small id="progressText" class="progress__text">0 de 200 números já escolhidos.</small>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <span class="kicker">1. ESCOLHA SEUS NÚMEROS</span>
+          <h2>Selecione um ou mais números</h2>
+        </div>
+        <button id="clearSelectionBtn" class="button button--soft" type="button">Limpar seleção</button>
+      </div>
+
+      <div class="legend">
+        <span><i class="dot dot--available"></i>Disponível</span>
+        <span><i class="dot dot--selected"></i>Selecionado</span>
+        <span><i class="dot dot--reserved"></i>Reservado</span>
+        <span><i class="dot dot--paid"></i>Pago</span>
+      </div>
+
+      <div id="loadingNumbers" class="loading-box">Carregando os 200 números...</div>
+      <div id="numberGrid" class="number-grid hidden" aria-label="Números da rifa"></div>
+    </section>
+
+    <section class="checkout">
+      <section class="card">
+        <span class="kicker">2. CONFIRME A RESERVA</span>
+        <h2>Seus dados</h2>
+
+        <form id="reserveForm" class="form">
+          <label>
+            Nome
+            <input id="nameInput" name="name" maxlength="80" autocomplete="name" placeholder="Digite seu nome" required>
+          </label>
+
+          <label>
+            WhatsApp com DDD
+            <input id="phoneInput" name="phone" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="(11) 99999-9999" required>
+          </label>
+
+          <div class="selection-box">
+            <span>Números selecionados</span>
+            <strong id="selectedNumbers">Nenhum</strong>
+          </div>
+
+          <button id="reserveButton" class="button button--primary button--large" type="submit">
+            Confirmar reserva
+          </button>
+
+          <p class="form-help">
+            A reserva não significa pagamento confirmado. O organizador atualizará o número para
+            <strong>Pago</strong> no painel administrativo após a confirmação.
+          </p>
+        </form>
+      </section>
+
+      <aside class="card rules">
+        <span class="kicker">TRANSPARÊNCIA</span>
+        <h2>Informações do sorteio</h2>
+        <dl>
+          <div><dt>Prêmio</dt><dd>R$ 200 via Pix</dd></div>
+          <div><dt>Data</dt><dd>18/10/2026</dd></div>
+          <div><dt>Horário</dt><dd>20h</dd></div>
+          <div><dt>Transmissão</dt><dd><a href="https://www.instagram.com/TUDODEHELENA/" target="_blank" rel="noopener noreferrer">@TUDODEHELENA</a></dd></div>
+          <div><dt>Participam</dt><dd>Números com pagamento confirmado</dd></div>
+        </dl>
+        <p>
+          O sorteio oficial fica registrado no banco e não pode ser realizado novamente depois que houver um vencedor.
+        </p>
+      </aside>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <span class="kicker">NÚMEROS INDISPONÍVEIS</span>
+          <h2>Reservados e pagos</h2>
+        </div>
+      </div>
+      <div id="unavailableList" class="chip-list">
+        <span class="muted">Nenhum número escolhido ainda.</span>
+      </div>
+    </section>
+
+    <section id="setupWarning" class="setup-warning hidden">
+      <strong>⚠️ Supabase ainda não preparado</strong>
+      <p>Execute o arquivo <code>supabase/INSTALAR_SUPABASE.sql</code> no SQL Editor do seu projeto.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell">
+      <strong>Rifa Beneficente • Piracaia-SP</strong>
+      <span>Prêmio de R$ 200 via Pix • Sorteio 18/10/2026 às 20h</span>
+      <a href="admin.html">Área do organizador</a>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
