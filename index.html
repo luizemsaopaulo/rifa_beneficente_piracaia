@@ -47,7 +47,7 @@
     <section id="paymentStatusCard" class="payment-status-card hidden" aria-live="polite">
       <span class="kicker">PAGAMENTO INFINITEPAY</span>
       <h2 id="paymentStatusTitle">Verificando pagamento...</h2>
-      <p id="paymentStatusText">Aguarde enquanto consultamos a situação da sua reserva.</p>
+      <p id="paymentStatusText">Aguarde enquanto consultamos a situação do seu pagamento.</p>
       <div class="payment-status-actions">
         <button id="continuePaymentBtn" class="button button--primary hidden" type="button">Continuar pagamento</button>
         <a id="receiptLink" class="button button--soft hidden" target="_blank" rel="noopener noreferrer">Ver comprovante</a>
@@ -94,7 +94,7 @@
 
       <div class="stats">
         <div class="stat stat--available"><span>Disponíveis</span><strong id="availableCount">200</strong></div>
-        <div class="stat stat--reserved"><span>Reservados</span><strong id="reservedCount">0</strong></div>
+        <div class="stat stat--pending"><span>Em pagamento</span><strong id="pendingCount">0</strong></div>
         <div class="stat stat--paid"><span>Pagos</span><strong id="paidCount">0</strong></div>
         <div class="stat"><span>Total</span><strong>200</strong></div>
       </div>
@@ -117,7 +117,7 @@
       <div class="legend">
         <span><i class="dot dot--available"></i>Disponível</span>
         <span><i class="dot dot--selected"></i>Selecionado</span>
-        <span><i class="dot dot--reserved"></i>Reservado</span>
+        <span><i class="dot dot--pending"></i>Em pagamento</span>
         <span><i class="dot dot--paid"></i>Pago</span>
       </div>
 
@@ -127,10 +127,10 @@
 
     <section class="checkout">
       <section class="card">
-        <span class="kicker">2. CONFIRME A RESERVA</span>
+        <span class="kicker">2. FINALIZE SUA COMPRA</span>
         <h2>Seus dados</h2>
 
-        <form id="reserveForm" class="form">
+        <form id="purchaseForm" class="form">
           <label>
             Nome
             <input id="nameInput" name="name" maxlength="80" autocomplete="name" placeholder="Digite seu nome" required>
@@ -152,14 +152,13 @@
             </div>
           </div>
 
-          <button id="reserveButton" class="button button--primary button--large" type="submit">
+          <button id="purchaseButton" class="button button--primary button--large" type="submit">
             Escolha seus números
           </button>
 
           <p class="form-help">
-            Cada número custa <strong>R$ 10,00</strong>. Ao confirmar, seus números são reservados e
-            você é direcionado para o checkout seguro da <strong>InfinitePay</strong>. Após a aprovação,
-            o Supabase muda os números automaticamente para <strong>Pago</strong>.
+            Cada número custa <strong>R$ 10,00</strong>. Ao clicar para comprar, você é direcionado imediatamente
+            ao checkout seguro da <strong>InfinitePay</strong>. O número fica <strong>Em pagamento</strong> durante o checkout e vira <strong>Pago</strong> após a aprovação.
           </p>
         </form>
       </section>
@@ -186,7 +185,7 @@
       <div class="section-head">
         <div>
           <span class="kicker">NÚMEROS INDISPONÍVEIS</span>
-          <h2>Reservados e pagos</h2>
+          <h2>Em pagamento e pagos</h2>
         </div>
       </div>
       <div id="unavailableList" class="chip-list">

@@ -3,7 +3,7 @@
 
   const cfg = window.RIFA_CONFIG;
   const db = window.supabaseClient;
-  const PENDING_KEY = "rifa_infinitepay_pending_v1";
+  const PENDING_KEY = "rifa_infinitepay_pending_v2";
 
   const state = {
     selected: new Set(),
@@ -19,17 +19,17 @@
     grid: $("numberGrid"),
     loading: $("loadingNumbers"),
     available: $("availableCount"),
-    reserved: $("reservedCount"),
+    pendingCount: $("pendingCount"),
     paid: $("paidCount"),
     progressBar: $("progressBar"),
     progressText: $("progressText"),
     selectedNumbers: $("selectedNumbers"),
     selectedTotal: $("selectedTotal"),
     clear: $("clearSelectionBtn"),
-    form: $("reserveForm"),
+    form: $("purchaseForm"),
     name: $("nameInput"),
     phone: $("phoneInput"),
-    reserveButton: $("reserveButton"),
+    purchaseButton: $("purchaseButton"),
     unavailableList: $("unavailableList"),
     badge: $("connectionBadge"),
     setupWarning: $("setupWarning"),
@@ -80,7 +80,7 @@
   function showSetupError() {
     el.setupWarning.classList.remove("hidden");
     setConnection("Banco não instalado");
-    el.loading.textContent = "O banco do Supabase ainda precisa ser instalado.";
+    el.loading.textContent = "O banco do Supabase ainda precisa ser atualizado.";
   }
 
   function showPaymentCard(type, title, text, options = {}) {
@@ -88,7 +88,6 @@
     if (type) el.paymentCard.classList.add(`payment-status-card--${type}`);
     el.paymentTitle.textContent = title;
     el.paymentText.textContent = text;
-
     el.continuePayment.classList.toggle("hidden", !options.continuePayment);
     el.receiptLink.classList.toggle("hidden", !options.receiptUrl);
     if (options.receiptUrl) el.receiptLink.href = options.receiptUrl;
@@ -155,10 +154,10 @@
       button.textContent = pad(n);
       button.dataset.number = String(n);
 
-      if (status === "reserved") {
-        button.classList.add("number--reserved");
+      if (status === "pending") {
+        button.classList.add("number--pending");
         button.disabled = true;
-        button.title = "Reservado";
+        button.title = "Pagamento em andamento";
       } else if (status === "paid") {
         button.classList.add("number--paid");
         button.disabled = true;
@@ -187,14 +186,14 @@
   function renderStats() {
     const values = [...state.numbers.values()];
     const available = values.filter(v => v === "available").length;
-    const reserved = values.filter(v => v === "reserved").length;
+    const pending = values.filter(v => v === "pending").length;
     const paid = values.filter(v => v === "paid").length;
-    const chosen = reserved + paid;
+    const unavailable = pending + paid;
     el.available.textContent = available;
-    el.reserved.textContent = reserved;
+    el.pendingCount.textContent = pending;
     el.paid.textContent = paid;
-    el.progressBar.style.width = `${(chosen / cfg.totalNumbers) * 100}%`;
-    el.progressText.textContent = `${chosen} de ${cfg.totalNumbers} números já escolhidos.`;
+    el.progressBar.style.width = `${(unavailable / cfg.totalNumbers) * 100}%`;
+    el.progressText.textContent = `${paid} pagos • ${pending} com pagamento em andamento.`;
   }
 
   function renderSelected() {
@@ -206,11 +205,11 @@
   function renderUnavailable() {
     const unavailable = [...state.numbers.entries()].filter(([, status]) => status !== "available").sort((a, b) => a[0] - b[0]);
     if (!unavailable.length) {
-      el.unavailableList.innerHTML = '<span class="muted">Nenhum número escolhido ainda.</span>';
+      el.unavailableList.innerHTML = '<span class="muted">Todos os números estão disponíveis.</span>';
       return;
     }
     el.unavailableList.innerHTML = unavailable.map(([n, status]) =>
-      `<span class="status-chip status-chip--${status}">${pad(n)} • ${status === "paid" ? "Pago" : "Reservado"}</span>`
+      `<span class="status-chip status-chip--${status}">${pad(n)} • ${status === "paid" ? "Pago" : "Em pagamento"}</span>`
     ).join("");
   }
 
@@ -226,10 +225,10 @@
     const pastDraw = Date.now() >= new Date(cfg.drawAt).getTime();
     const count = state.selected.size;
     const blocked = closed || pastDraw;
-    el.reserveButton.disabled = blocked || count === 0;
-    if (blocked) el.reserveButton.textContent = "Reservas encerradas";
-    else if (!count) el.reserveButton.textContent = "Escolha seus números";
-    else el.reserveButton.textContent = `Pagar ${money(count * cfg.unitPriceCents)} pela InfinitePay`;
+    el.purchaseButton.disabled = blocked || count === 0;
+    if (blocked) el.purchaseButton.textContent = "Vendas encerradas";
+    else if (!count) el.purchaseButton.textContent = "Escolha seus números";
+    else el.purchaseButton.textContent = `Comprar ${money(count * cfg.unitPriceCents)}`;
   }
 
   function buildRedirectUrl() {
@@ -255,14 +254,14 @@
     return data;
   }
 
-  async function createCheckout(orderNsu) {
-    const data = await callGateway({
+  async function startPurchase(name, phone, numbers) {
+    return callGateway({
       action: "create",
-      order_nsu: orderNsu,
+      name,
+      whatsapp: phone,
+      numbers,
       redirect_url: buildRedirectUrl()
     });
-    if (!data?.url) throw new Error("A InfinitePay não retornou o link de pagamento.");
-    return data.url;
   }
 
   async function checkPaymentStatus(orderNsu, quiet = false) {
@@ -280,7 +279,7 @@
     }
 
     const pending = loadPending();
-    showPaymentCard("warning", "Pagamento aguardando confirmação", `Sua reserva ${data.numbers.map(pad).join(", ")} está guardada. Finalize o pagamento de ${money(data.expected_amount_cents)} pela InfinitePay.`, { continuePayment: true, receiptUrl: data.receipt_url });
+    showPaymentCard("warning", "Pagamento ainda não confirmado", `Os números ${data.numbers.map(pad).join(", ")} estão com pagamento em andamento no valor de ${money(data.expected_amount_cents)}.`, { continuePayment: Boolean(pending?.checkout_url), receiptUrl: data.receipt_url });
     if (pending) state.pending = pending;
     return data;
   }
@@ -295,16 +294,8 @@
     if (orderNsu && transactionNsu && slug) {
       showPaymentCard("warning", "Confirmando seu pagamento...", "Recebemos o retorno da InfinitePay e estamos validando a transação.");
       try {
-        await callGateway({
-          action: "confirm",
-          order_nsu: orderNsu,
-          transaction_nsu: transactionNsu,
-          slug,
-          receipt_url: receiptUrl || null
-        });
-      } catch (error) {
-        console.error(error);
-      }
+        await callGateway({ action: "confirm", order_nsu: orderNsu, transaction_nsu: transactionNsu, slug, receipt_url: receiptUrl || null });
+      } catch (error) { console.error(error); }
       for (let i = 0; i < 5; i++) {
         const status = await checkPaymentStatus(orderNsu, true);
         if (status?.payment_status === "paid") break;
@@ -321,24 +312,8 @@
 
   async function retryPendingPayment() {
     const pending = loadPending();
-    if (!pending?.order_nsu) return showToast("Não encontrei uma reserva pendente.", "error");
-
-    if (pending.checkout_url) {
-      location.assign(pending.checkout_url);
-      return;
-    }
-
-    el.continuePayment.disabled = true;
-    el.continuePayment.textContent = "Gerando checkout...";
-    try {
-      const url = await createCheckout(pending.order_nsu);
-      savePending({ ...pending, checkout_url: url });
-      location.assign(url);
-    } catch (error) {
-      showToast(error.message || "Não foi possível abrir o pagamento.", "error");
-      el.continuePayment.disabled = false;
-      el.continuePayment.textContent = "Continuar pagamento";
-    }
+    if (!pending?.checkout_url) return showToast("Não encontrei um checkout em andamento.", "error");
+    location.assign(pending.checkout_url);
   }
 
   el.clear.addEventListener("click", () => {
@@ -362,44 +337,28 @@
     if (name.length < 2) return showToast("Digite um nome válido.", "error");
     if (phone.length < 10 || phone.length > 15) return showToast("Digite um WhatsApp válido com DDD.", "error");
 
-    el.reserveButton.disabled = true;
-    el.reserveButton.textContent = "Reservando números...";
-
-    const { data, error } = await db.rpc("reserve_numbers", {
-      p_name: name,
-      p_whatsapp: phone,
-      p_numbers: numbers
-    });
-
-    if (error) {
-      console.error(error);
-      showToast(error.message || "Não foi possível reservar.", "error");
-      await loadAll();
-      renderSalesState();
-      return;
-    }
-
-    const orderNsu = data.order_nsu;
-    savePending({
-      order_nsu: orderNsu,
-      numbers: data.numbers,
-      amount_cents: data.amount_cents,
-      checkout_url: null
-    });
-
-    state.selected.clear();
-    renderSelected();
-    el.reserveButton.textContent = "Abrindo InfinitePay...";
+    el.purchaseButton.disabled = true;
+    el.purchaseButton.textContent = "Abrindo pagamento...";
 
     try {
-      const checkoutUrl = await createCheckout(orderNsu);
-      savePending({ ...state.pending, checkout_url: checkoutUrl });
-      location.assign(checkoutUrl);
-    } catch (gatewayError) {
-      console.error(gatewayError);
-      showPaymentCard("error", "Reserva feita, mas o checkout não abriu", `Seus números estão reservados. Clique em “Continuar pagamento” para tentar gerar o link da InfinitePay novamente.`, { continuePayment: true });
-      showToast(gatewayError.message || "Não foi possível abrir a InfinitePay.", "error");
+      const data = await startPurchase(name, phone, numbers);
+      if (!data?.url || !data?.order_nsu) throw new Error("A InfinitePay não retornou o checkout.");
+
+      savePending({
+        order_nsu: data.order_nsu,
+        numbers: data.numbers || numbers,
+        amount_cents: data.amount_cents || numbers.length * cfg.unitPriceCents,
+        checkout_url: data.url
+      });
+
+      state.selected.clear();
+      renderSelected();
+      location.assign(data.url);
+    } catch (error) {
+      console.error(error);
+      showToast(error.message || "Não foi possível iniciar a compra.", "error");
       await loadAll();
+      renderSalesState();
     }
   });
 

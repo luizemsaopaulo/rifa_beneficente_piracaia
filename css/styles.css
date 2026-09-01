@@ -8,8 +8,8 @@
   --primary-dark: #861333;
   --soft: #fff0f3;
   --available: #ffffff;
-  --reserved: #fff2c7;
-  --reserved-text: #8a5b00;
+  --pending: #fff2c7;
+  --pending-text: #8a5b00;
   --paid: #dcfce7;
   --paid-text: #166534;
   --success: #15803d;
@@ -88,7 +88,7 @@ a { color: inherit; }
 .stat span { display: block; color: var(--muted); font-size: .78rem; }
 .stat strong { font-size: 1.65rem; }
 .stat--available { background: #fff; }
-.stat--reserved { background: #fffbeb; }
+.stat--pending { background: #fffbeb; }
 .stat--paid { background: #f0fdf4; }
 .progress { height: 11px; overflow: hidden; margin-top: 15px; border-radius: 999px; background: #f1e8eb; }
 .progress__bar { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), #fb7185); transition: width .3s ease; }
@@ -99,14 +99,14 @@ a { color: inherit; }
 .dot { width: 12px; height: 12px; border: 1px solid var(--line); border-radius: 4px; }
 .dot--available { background: white; }
 .dot--selected { background: var(--primary); border-color: var(--primary); }
-.dot--reserved { background: var(--reserved); border-color: #f2cc68; }
+.dot--pending { background: var(--pending); border-color: #f2cc68; }
 .dot--paid { background: var(--paid); border-color: #86efac; }
 
 .number-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px; }
 .number { min-height: 50px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: white; color: var(--text); font-weight: 900; transition: .15s ease; }
 button.number:hover:not(:disabled) { transform: translateY(-2px); border-color: #f087a0; }
 .number--selected { color: white; background: var(--primary); border-color: var(--primary); }
-.number--reserved { color: var(--reserved-text); background: var(--reserved); border-color: #f2cf72; cursor: not-allowed; }
+.number--pending { color: var(--pending-text); background: var(--pending); border-color: #f2cf72; cursor: not-allowed; }
 .number--paid { color: var(--paid-text); background: var(--paid); border-color: #86efac; cursor: not-allowed; }
 .loading-box { padding: 30px; text-align: center; border-radius: 14px; background: #faf7f8; color: var(--muted); }
 
@@ -141,7 +141,7 @@ input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 .chip-list { display: flex; flex-wrap: wrap; gap: 7px; }
 .status-chip { display: inline-flex; padding: 7px 9px; border-radius: 999px; font-size: .76rem; font-weight: 850; border: 1px solid var(--line); }
 .status-chip--available { background: #fff; }
-.status-chip--reserved { background: var(--reserved); color: var(--reserved-text); border-color: #f2cf72; }
+.status-chip--pending { background: var(--pending); color: var(--pending-text); border-color: #f2cf72; }
 .status-chip--paid { background: var(--paid); color: var(--paid-text); border-color: #86efac; }
 .muted { color: var(--muted); }
 

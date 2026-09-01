@@ -53,16 +53,16 @@
 
       <section class="admin-stats-grid">
         <div class="admin-stat"><span>Disponíveis</span><strong id="adminAvailable">0</strong><small>Números que faltam vender</small></div>
-        <div class="admin-stat"><span>Reservados</span><strong id="adminReserved">0</strong><small>Aguardando pagamento</small></div>
+        <div class="admin-stat"><span>Em pagamento</span><strong id="adminPending">0</strong><small>Checkout iniciado</small></div>
         <div class="admin-stat"><span>Pagos</span><strong id="adminPaid">0</strong><small>Participam do sorteio</small></div>
-        <div class="admin-stat"><span>Compradores</span><strong id="adminBuyers">0</strong><small>Reservas cadastradas</small></div>
+        <div class="admin-stat"><span>Compradores</span><strong id="adminBuyers">0</strong><small>Pedidos cadastrados</small></div>
       </section>
 
       <section class="card sales-control">
         <div>
           <span class="kicker">VENDAS</span>
           <h2 id="salesStatusTitle">Vendas abertas</h2>
-          <p id="salesStatusText">O público ainda pode reservar números.</p>
+          <p id="salesStatusText">O público ainda pode comprar números.</p>
         </div>
         <button id="toggleSalesBtn" class="button button--danger" type="button">Fechar vendas</button>
       </section>
@@ -87,7 +87,7 @@
         </div>
         <div class="legend">
           <span><i class="dot dot--available"></i>Disponível</span>
-          <span><i class="dot dot--reserved"></i>Reservado</span>
+          <span><i class="dot dot--pending"></i>Em pagamento</span>
           <span><i class="dot dot--paid"></i>Pago</span>
         </div>
         <div id="adminNumberGrid" class="number-grid number-grid--admin"></div>
@@ -97,13 +97,13 @@
         <div class="section-head buyer-head">
           <div>
             <span class="kicker">COMPRADORES</span>
-            <h2>Reservas e pagamentos</h2>
+            <h2>Pedidos e pagamentos</h2>
           </div>
           <div class="buyer-tools">
             <input id="buyerSearch" type="search" placeholder="Buscar nome, WhatsApp ou número">
-            <select id="buyerFilter" aria-label="Filtrar reservas">
+            <select id="buyerFilter" aria-label="Filtrar pedidos">
               <option value="all">Todos</option>
-              <option value="reserved">Aguardando pagamento</option>
+              <option value="pending">Em pagamento</option>
               <option value="paid">Pagos</option>
             </select>
             <button id="exportCsvBtn" class="button button--dark" type="button">Exportar CSV</button>

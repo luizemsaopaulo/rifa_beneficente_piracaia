@@ -21,7 +21,7 @@
     refresh: $("refreshAdminBtn"),
     logout: $("logoutBtn"),
     available: $("adminAvailable"),
-    reserved: $("adminReserved"),
+    pending: $("adminPending"),
     paid: $("adminPaid"),
     buyers: $("adminBuyers"),
     salesTitle: $("salesStatusTitle"),
@@ -127,7 +127,7 @@
 
     const stats = data.stats || {};
     el.available.textContent = stats.available ?? 0;
-    el.reserved.textContent = stats.reserved ?? 0;
+    el.pending.textContent = stats.pending ?? 0;
     el.paid.textContent = stats.paid ?? 0;
     el.buyers.textContent = stats.buyers ?? 0;
 
@@ -142,8 +142,8 @@
     const closed = Boolean(s.sales_closed);
     el.salesTitle.textContent = closed ? "Vendas fechadas" : "Vendas abertas";
     el.salesText.textContent = closed
-      ? "Novas reservas estão bloqueadas."
-      : "O público ainda pode reservar números.";
+      ? "Novas compras estão bloqueadas."
+      : "O público ainda pode comprar números.";
     el.toggleSales.textContent = closed ? "Reabrir vendas" : "Fechar vendas";
     el.toggleSales.classList.toggle("button--danger", !closed);
     el.toggleSales.classList.toggle("button--success", closed);
@@ -194,7 +194,7 @@
   function statusBadge(status) {
     return status === "paid"
       ? '<span class="payment-badge payment-badge--paid">Pago</span>'
-      : '<span class="payment-badge payment-badge--reserved">Aguardando</span>';
+      : '<span class="payment-badge payment-badge--pending">Em pagamento</span>';
   }
 
   function actionsHtml(r) {
@@ -202,7 +202,7 @@
     return `
       <div class="row-actions">
         <button class="mini-button ${paid ? "mini-button--soft" : "mini-button--success"}" data-payment="${r.id}" data-paid="${paid ? "false" : "true"}">
-          ${paid ? "Voltar p/ reservado" : "Confirmar pagamento"}
+          ${paid ? "Voltar p/ em pagamento" : "Confirmar pagamento"}
         </button>
         <button class="mini-button mini-button--danger" data-cancel="${r.id}">Cancelar</button>
       </div>
@@ -213,8 +213,8 @@
     const rows = filteredReservations();
 
     if (!rows.length) {
-      el.tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">Nenhuma reserva encontrada.</td></tr>';
-      el.cards.innerHTML = '<p class="muted">Nenhuma reserva encontrada.</p>';
+      el.tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">Nenhum pedido encontrado.</td></tr>';
+      el.cards.innerHTML = '<p class="muted">Nenhum pedido encontrado.</p>';
       return;
     }
 
@@ -239,7 +239,7 @@
         </div>
         <div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div>
         <p><strong>${money(r.expected_amount_cents)}</strong> • InfinitePay</p>
-        <small>Reservado em ${escapeHtml(formatDate(r.created_at))}</small>
+        <small>Compra iniciada em ${escapeHtml(formatDate(r.created_at))}</small>
         ${actionsHtml(r)}
       </article>
     `).join("");
@@ -252,7 +252,7 @@
       btn.addEventListener("click", async () => {
         const id = btn.dataset.payment;
         const paid = btn.dataset.paid === "true";
-        const action = paid ? "confirmar o pagamento" : "voltar esta reserva para aguardando pagamento";
+        const action = paid ? "confirmar o pagamento" : "voltar este pedido para pagamento em andamento";
         if (!confirm(`Deseja ${action}?`)) return;
 
         try {
@@ -268,12 +268,12 @@
     document.querySelectorAll("[data-cancel]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.dataset.cancel;
-        if (!confirm("Cancelar esta reserva e liberar todos os números dela?")) return;
+        if (!confirm("Liberar os números deste pedido?")) return;
 
         try {
           await rpc("admin_cancel_reservation", { p_reservation_id: id });
           await refreshDashboard();
-          showToast("Reserva cancelada e números liberados.", "success");
+          showToast("Pedido cancelado e números liberados.", "success");
         } catch (error) {
           showToast(error.message, "error");
         }
@@ -353,13 +353,13 @@
     if (!reservations.length) return showToast("Não há dados para exportar.", "error");
 
     const rows = [
-      ["Comprador", "WhatsApp", "Números", "Valor", "Status", "Pedido", "Transação", "Método", "Reservado em", "Pago em", "Comprovante"],
+      ["Comprador", "WhatsApp", "Números", "Valor", "Status", "Pedido", "Transação", "Método", "Compra iniciada em", "Pago em", "Comprovante"],
       ...reservations.map(r => [
         r.buyer_name,
         r.whatsapp,
         (r.numbers || []).map(pad).join(" "),
         money(r.expected_amount_cents),
-        r.payment_status === "paid" ? "Pago" : "Aguardando",
+        r.payment_status === "paid" ? "Pago" : "Em pagamento",
         r.order_nsu || "",
         r.transaction_nsu || "",
         r.capture_method || "InfinitePay",

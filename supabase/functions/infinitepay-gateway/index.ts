@@ -17,7 +17,7 @@ const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession
 const HANDLE = "luizwl";
 const UNIT_PRICE = 1000;
 
-async function getReservation(orderNsu: string) {
+async function getOrder(orderNsu: string) {
   const { data, error } = await db
     .from("reservations")
     .select("id,numbers,payment_status,expected_amount_cents,checkout_url,order_nsu")
@@ -37,8 +37,8 @@ async function verifyAndConfirm(payload: {
     throw new Error("Dados do pagamento incompletos.");
   }
 
-  const reservation = await getReservation(payload.order_nsu);
-  if (reservation.payment_status === "paid") return { ok: true, paid: true, already_paid: true };
+  const order = await getOrder(payload.order_nsu);
+  if (order.payment_status === "paid") return { ok: true, paid: true, already_paid: true };
 
   const checkResponse = await fetch("https://api.checkout.infinitepay.io/payment_check", {
     method: "POST",
@@ -55,7 +55,7 @@ async function verifyAndConfirm(payload: {
   const check = await checkResponse.json();
   if (!check?.success || !check?.paid) return { ok: true, paid: false };
 
-  const expected = Number(reservation.expected_amount_cents);
+  const expected = Number(order.expected_amount_cents);
   const received = Number(check.amount);
   if (!Number.isFinite(received) || received !== expected) {
     throw new Error(`Valor divergente. Esperado ${expected}, recebido ${received}.`);
@@ -72,51 +72,63 @@ async function verifyAndConfirm(payload: {
   return { ok: true, paid: true, data };
 }
 
-async function createCheckout(body: any) {
-  const orderNsu = String(body.order_nsu || "");
+async function createPurchase(body: any) {
+  const name = String(body.name || "").trim();
+  const whatsapp = String(body.whatsapp || "").replace(/\D/g, "");
+  const numbers = Array.isArray(body.numbers) ? body.numbers.map(Number) : [];
   const redirectUrl = String(body.redirect_url || "");
-  if (!orderNsu) throw new Error("order_nsu não informado.");
 
   let redirect: URL;
   try { redirect = new URL(redirectUrl); }
   catch { throw new Error("redirect_url inválida."); }
   if (!["http:", "https:"].includes(redirect.protocol)) throw new Error("redirect_url inválida.");
 
-  const reservation = await getReservation(orderNsu);
-  if (reservation.payment_status === "paid") return { paid: true, order_nsu: orderNsu };
-  if (reservation.checkout_url) return { url: reservation.checkout_url, reused: true };
-
-  const numbers = Array.isArray(reservation.numbers) ? reservation.numbers : [];
-  if (!numbers.length) throw new Error("Reserva sem números.");
-  const expected = numbers.length * UNIT_PRICE;
-  if (Number(reservation.expected_amount_cents) !== expected) throw new Error("Valor interno da reserva está incorreto.");
-
-  const webhookUrl = `${SUPABASE_URL}/functions/v1/infinitepay-gateway`;
-  const response = await fetch("https://api.checkout.infinitepay.io/links", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      handle: HANDLE,
-      redirect_url: redirect.toString(),
-      webhook_url: webhookUrl,
-      order_nsu: orderNsu,
-      items: [{
-        quantity: numbers.length,
-        price: UNIT_PRICE,
-        description: `Rifa Beneficente - ${numbers.length} número(s)`,
-      }],
-    }),
+  const { data: started, error: startError } = await db.rpc("start_infinitepay_payment", {
+    p_name: name,
+    p_whatsapp: whatsapp,
+    p_numbers: numbers,
   });
+  if (startError) throw startError;
 
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || !result?.url) throw new Error(result?.message || "A InfinitePay não gerou o checkout.");
+  const orderNsu = String(started.order_nsu || "");
+  const amount = Number(started.amount_cents || 0);
+  const selectedNumbers = Array.isArray(started.numbers) ? started.numbers : numbers;
 
-  await db.from("reservations").update({
-    checkout_url: result.url,
-    checkout_created_at: new Date().toISOString(),
-  }).eq("id", reservation.id);
+  try {
+    const webhookUrl = `${SUPABASE_URL}/functions/v1/infinitepay-gateway`;
+    const response = await fetch("https://api.checkout.infinitepay.io/links", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        handle: HANDLE,
+        redirect_url: redirect.toString(),
+        webhook_url: webhookUrl,
+        order_nsu: orderNsu,
+        customer: {
+          name,
+          phone_number: `+55${whatsapp}`,
+        },
+        items: [{
+          quantity: selectedNumbers.length,
+          price: UNIT_PRICE,
+          description: `Rifa Beneficente - ${selectedNumbers.length} número(s)`,
+        }],
+      }),
+    });
 
-  return { url: result.url, order_nsu: orderNsu, amount_cents: expected };
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result?.url) throw new Error(result?.message || "A InfinitePay não gerou o checkout.");
+
+    await db.from("reservations").update({
+      checkout_url: result.url,
+      checkout_created_at: new Date().toISOString(),
+    }).eq("order_nsu", orderNsu);
+
+    return { url: result.url, order_nsu: orderNsu, amount_cents: amount, numbers: selectedNumbers };
+  } catch (error) {
+    await db.rpc("cancel_infinitepay_pending", { p_order_nsu: orderNsu });
+    throw error;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -127,7 +139,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
 
     if (body?.action === "create") {
-      return json(await createCheckout(body));
+      return json(await createPurchase(body));
     }
 
     if (body?.action === "confirm") {
@@ -140,7 +152,6 @@ Deno.serve(async (req) => {
       return json(result);
     }
 
-    // Webhook da InfinitePay
     const task = verifyAndConfirm({
       order_nsu: String(body.order_nsu || ""),
       transaction_nsu: String(body.transaction_nsu || ""),

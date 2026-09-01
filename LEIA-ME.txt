@@ -13,13 +13,13 @@ PAGAMENTO
 - O valor e calculado automaticamente: quantidade x R$ 10,00.
 - Exemplo: 3 numeros = R$ 30,00.
 - O site NAO exibe Pix pessoal.
-- A InfinitePay gera um checkout diferente para cada reserva.
+- A InfinitePay gera um checkout diferente para cada pedido.
 - O webhook valida o pagamento na InfinitePay antes de marcar como Pago.
 
 FLUXO
 1. Pessoa escolhe os numeros.
 2. Informa nome e WhatsApp.
-3. O Supabase reserva os numeros e cria um order_nsu exclusivo.
+3. O Supabase pedido os numeros e cria um order_nsu exclusivo.
 4. A Edge Function cria o checkout da InfinitePay com o valor correto.
 5. A pessoa paga no checkout.
 6. O webhook consulta payment_check na InfinitePay.
@@ -59,14 +59,14 @@ ARQUIVOS IMPORTANTES
 - DEPLOY_INFINITEPAY.bat
 
 PAINEL ADMIN
-- disponiveis, reservados e pagos
+- disponiveis, em pagamentos e pagos
 - compradores e WhatsApp
-- valor de cada reserva
+- valor de cada pedido
 - pedido/Order NSU
 - metodo de pagamento e comprovante quando disponivel
 - busca
 - confirmar/desfazer pagamento manualmente como contingencia
-- cancelar reserva e liberar numeros
+- cancelar pedido e liberar numeros
 - fechar/reabrir vendas
 - CSV
 - sorteio oficial protegido
@@ -85,3 +85,18 @@ Rifa-akjLk-ichXf-Mfh3W
 
 REPORTAGENS
 G1 e Brasil Urgente continuam na pagina publica.
+
+
+ALTERACAO - SEM RESERVA MANUAL
+==============================
+O cliente nao pode guardar numero sem pagar.
+Fluxo publico: Disponivel -> Em pagamento -> Pago.
+
+"Em pagamento" e apenas uma trava tecnica criada quando o cliente clica em COMPRAR e o checkout InfinitePay e aberto.
+Se a InfinitePay falhar ao criar o checkout, os numeros sao liberados imediatamente.
+No painel admin e possivel liberar manualmente um pedido abandonado.
+
+IMPORTANTE PARA QUEM JA INSTALOU A VERSAO ANTERIOR:
+1. Execute novamente supabase/INSTALAR_SUPABASE.sql no SQL Editor.
+2. No Dashboard > Edge Functions > infinitepay-gateway > Code, substitua o codigo pelo novo index.ts deste projeto e faca Deploy.
+3. Mantenha Verify JWT with legacy secret DESLIGADO.

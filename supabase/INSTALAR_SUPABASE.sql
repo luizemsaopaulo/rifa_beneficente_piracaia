@@ -4,7 +4,7 @@
 -- Sorteio: 18/10/2026 20:00 | Instagram @TUDODEHELENA
 -- ============================================================
 -- Este instalador pode ser executado novamente.
--- Ele preserva as reservas existentes e atualiza a estrutura.
+-- Ele preserva os pedidos existentes e migra o antigo status Reservado para Em pagamento.
 -- ============================================================
 
 create schema if not exists extensions;
@@ -16,7 +16,7 @@ grant usage on schema private to anon, authenticated, service_role;
 
 create table if not exists public.raffle_numbers (
   number integer primary key check (number between 1 and 200),
-  status text not null default 'available' check (status in ('available', 'reserved', 'paid')),
+  status text not null default 'available' check (status in ('available', 'pending', 'paid')),
   updated_at timestamptz not null default now()
 );
 
@@ -25,10 +25,18 @@ create table if not exists public.reservations (
   buyer_name text not null,
   whatsapp text not null,
   numbers integer[] not null,
-  payment_status text not null default 'reserved' check (payment_status in ('reserved', 'paid')),
+  payment_status text not null default 'pending' check (payment_status in ('pending', 'paid')),
   created_at timestamptz not null default now(),
   paid_at timestamptz
 );
+
+-- Migração da versão antiga: Reservado -> Em pagamento
+alter table public.raffle_numbers drop constraint if exists raffle_numbers_status_check;
+alter table public.reservations drop constraint if exists reservations_payment_status_check;
+update public.raffle_numbers set status = 'pending' where status = 'reserved';
+update public.reservations set payment_status = 'pending' where payment_status = 'reserved';
+alter table public.raffle_numbers add constraint raffle_numbers_status_check check (status in ('available', 'pending', 'paid'));
+alter table public.reservations add constraint reservations_payment_status_check check (payment_status in ('pending', 'paid'));
 
 alter table public.reservations add column if not exists order_nsu text;
 alter table public.reservations add column if not exists expected_amount_cents integer;
@@ -126,7 +134,11 @@ as $$
   );
 $$;
 
-create or replace function private.reserve_numbers_internal(p_name text, p_whatsapp text, p_numbers integer[])
+-- Remove a rota antiga de simples reserva, caso exista de uma versão anterior.
+drop function if exists public.reserve_numbers(text,text,integer[]);
+drop function if exists private.reserve_numbers_internal(text,text,integer[]);
+
+create or replace function private.start_infinitepay_payment_internal(p_name text, p_whatsapp text, p_numbers integer[])
 returns jsonb
 language plpgsql
 security definer
@@ -141,7 +153,7 @@ declare
   v_state public.raffle_public_state%rowtype;
 begin
   select * into v_state from public.raffle_public_state where id = 1 for update;
-  if v_state.sales_closed or now() >= v_state.draw_at then raise exception 'As reservas desta rifa estao encerradas.'; end if;
+  if v_state.sales_closed or now() >= v_state.draw_at then raise exception 'As vendas desta rifa estao encerradas.'; end if;
   if length(trim(coalesce(p_name, ''))) < 2 or length(trim(coalesce(p_name, ''))) > 80 then raise exception 'Digite um nome valido.'; end if;
   if coalesce(p_whatsapp, '') !~ '^[0-9]{10,15}$' then raise exception 'Digite um WhatsApp valido com DDD.'; end if;
   if coalesce(cardinality(p_numbers), 0) < 1 then raise exception 'Escolha pelo menos um numero.'; end if;
@@ -154,7 +166,7 @@ begin
   select count(*) into v_total from public.raffle_numbers n where n.number = any(v_numbers);
   if v_total <> cardinality(v_numbers) then raise exception 'Um ou mais numeros nao existem.'; end if;
   if exists (select 1 from public.raffle_numbers n where n.number = any(v_numbers) and n.status <> 'available') then
-    raise exception 'Um dos numeros escolhidos acabou de ser reservado. Atualize e escolha outro.';
+    raise exception 'Um dos numeros escolhidos acabou de entrar em pagamento. Atualize e escolha outro.';
   end if;
 
   v_order_nsu := 'RIFA-' || replace(v_id::text, '-', '');
@@ -164,15 +176,15 @@ begin
     id, buyer_name, whatsapp, numbers, payment_status,
     order_nsu, expected_amount_cents, payment_provider
   ) values (
-    v_id, trim(p_name), p_whatsapp, v_numbers, 'reserved',
+    v_id, trim(p_name), p_whatsapp, v_numbers, 'pending',
     v_order_nsu, v_amount, 'infinitepay'
   );
 
-  update public.raffle_numbers set status = 'reserved', updated_at = now() where number = any(v_numbers);
+  update public.raffle_numbers set status = 'pending', updated_at = now() where number = any(v_numbers);
 
   return jsonb_build_object(
     'ok', true,
-    'reservation_id', v_id,
+    'order_id', v_id,
     'order_nsu', v_order_nsu,
     'amount_cents', v_amount,
     'numbers', to_jsonb(v_numbers)
@@ -241,6 +253,24 @@ begin
 end;
 $$;
 
+create or replace function private.cancel_infinitepay_pending_internal(p_order_nsu text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, extensions
+as $$
+declare
+  r public.reservations%rowtype;
+begin
+  select * into r from public.reservations where order_nsu = p_order_nsu for update;
+  if r.id is null then return jsonb_build_object('ok', true, 'found', false); end if;
+  if r.payment_status = 'paid' then return jsonb_build_object('ok', false, 'paid', true); end if;
+  update public.raffle_numbers set status = 'available', updated_at = now() where number = any(r.numbers) and status = 'pending';
+  delete from public.reservations where id = r.id and payment_status = 'pending';
+  return jsonb_build_object('ok', true, 'found', true, 'released', true);
+end;
+$$;
+
 create or replace function private.admin_dashboard_internal(p_password text)
 returns jsonb
 language plpgsql
@@ -263,7 +293,7 @@ begin
   select jsonb_build_object(
     'stats', jsonb_build_object(
       'available', (select count(*) from public.raffle_numbers where status = 'available'),
-      'reserved', (select count(*) from public.raffle_numbers where status = 'reserved'),
+      'pending', (select count(*) from public.raffle_numbers where status = 'pending'),
       'paid', (select count(*) from public.raffle_numbers where status = 'paid'),
       'buyers', (select count(*) from public.reservations)
     ),
@@ -295,10 +325,10 @@ declare v_numbers integer[];
 begin
   if not private.admin_password_ok(p_password) then raise exception 'Senha incorreta.'; end if;
   select r.numbers into v_numbers from public.reservations r where r.id = p_reservation_id for update;
-  if v_numbers is null then raise exception 'Reserva nao encontrada.'; end if;
-  update public.reservations set payment_status = case when p_paid then 'paid' else 'reserved' end,
+  if v_numbers is null then raise exception 'Pedido nao encontrado.'; end if;
+  update public.reservations set payment_status = case when p_paid then 'paid' else 'pending' end,
     paid_at = case when p_paid then now() else null end where id = p_reservation_id;
-  update public.raffle_numbers set status = case when p_paid then 'paid' else 'reserved' end, updated_at = now() where number = any(v_numbers);
+  update public.raffle_numbers set status = case when p_paid then 'paid' else 'pending' end, updated_at = now() where number = any(v_numbers);
   return jsonb_build_object('ok', true);
 end; $$;
 
@@ -308,9 +338,9 @@ declare v_numbers integer[]; v_winner_reservation uuid;
 begin
   if not private.admin_password_ok(p_password) then raise exception 'Senha incorreta.'; end if;
   select winner_reservation_id into v_winner_reservation from public.raffle_public_state where id = 1;
-  if v_winner_reservation = p_reservation_id then raise exception 'A reserva vencedora nao pode ser cancelada.'; end if;
+  if v_winner_reservation = p_reservation_id then raise exception 'O pedido vencedor nao pode ser cancelado.'; end if;
   select r.numbers into v_numbers from public.reservations r where r.id = p_reservation_id for update;
-  if v_numbers is null then raise exception 'Reserva nao encontrada.'; end if;
+  if v_numbers is null then raise exception 'Pedido nao encontrado.'; end if;
   update public.raffle_numbers set status = 'available', updated_at = now() where number = any(v_numbers);
   delete from public.reservations where id = p_reservation_id;
   return jsonb_build_object('ok', true);
@@ -349,9 +379,9 @@ begin
 end; $$;
 
 -- Wrappers RPC
-create or replace function public.reserve_numbers(p_name text, p_whatsapp text, p_numbers integer[])
+create or replace function public.start_infinitepay_payment(p_name text, p_whatsapp text, p_numbers integer[])
 returns jsonb language sql security invoker set search_path = pg_catalog, extensions as $$
-  select private.reserve_numbers_internal(p_name, p_whatsapp, p_numbers);
+  select private.start_infinitepay_payment_internal(p_name, p_whatsapp, p_numbers);
 $$;
 
 create or replace function public.payment_status(p_order_nsu text)
@@ -364,6 +394,11 @@ create or replace function public.confirm_infinitepay_payment(
 )
 returns jsonb language sql security invoker set search_path = pg_catalog, extensions as $$
   select private.confirm_infinitepay_payment_internal(p_order_nsu, p_transaction_nsu, p_receipt_url, p_capture_method, p_amount_cents);
+$$;
+
+create or replace function public.cancel_infinitepay_pending(p_order_nsu text)
+returns jsonb language sql security invoker set search_path = pg_catalog, extensions as $$
+  select private.cancel_infinitepay_pending_internal(p_order_nsu);
 $$;
 
 create or replace function public.admin_dashboard(p_password text)
@@ -379,36 +414,40 @@ returns jsonb language sql security invoker set search_path = pg_catalog, extens
 
 -- Privilegios RPC
 revoke all on function private.admin_password_ok(text) from public;
-revoke all on function private.reserve_numbers_internal(text,text,integer[]) from public;
+revoke all on function private.start_infinitepay_payment_internal(text,text,integer[]) from public;
 revoke all on function private.payment_status_internal(text) from public;
 revoke all on function private.confirm_infinitepay_payment_internal(text,text,text,text,integer) from public;
+revoke all on function private.cancel_infinitepay_pending_internal(text) from public;
 revoke all on function private.admin_dashboard_internal(text) from public;
 revoke all on function private.admin_set_payment_internal(text,uuid,boolean) from public;
 revoke all on function private.admin_cancel_reservation_internal(text,uuid) from public;
 revoke all on function private.admin_set_sales_closed_internal(text,boolean) from public;
 revoke all on function private.admin_draw_winner_internal(text) from public;
 
-grant execute on function private.reserve_numbers_internal(text,text,integer[]) to anon, authenticated;
+grant execute on function private.start_infinitepay_payment_internal(text,text,integer[]) to service_role;
 grant execute on function private.payment_status_internal(text) to anon, authenticated;
 grant execute on function private.confirm_infinitepay_payment_internal(text,text,text,text,integer) to service_role;
+grant execute on function private.cancel_infinitepay_pending_internal(text) to service_role;
 grant execute on function private.admin_dashboard_internal(text) to anon, authenticated;
 grant execute on function private.admin_set_payment_internal(text,uuid,boolean) to anon, authenticated;
 grant execute on function private.admin_cancel_reservation_internal(text,uuid) to anon, authenticated;
 grant execute on function private.admin_set_sales_closed_internal(text,boolean) to anon, authenticated;
 grant execute on function private.admin_draw_winner_internal(text) to anon, authenticated;
 
-revoke all on function public.reserve_numbers(text,text,integer[]) from public;
+revoke all on function public.start_infinitepay_payment(text,text,integer[]) from public;
 revoke all on function public.payment_status(text) from public;
 revoke all on function public.confirm_infinitepay_payment(text,text,text,text,integer) from public;
+revoke all on function public.cancel_infinitepay_pending(text) from public;
 revoke all on function public.admin_dashboard(text) from public;
 revoke all on function public.admin_set_payment(text,uuid,boolean) from public;
 revoke all on function public.admin_cancel_reservation(text,uuid) from public;
 revoke all on function public.admin_set_sales_closed(text,boolean) from public;
 revoke all on function public.admin_draw_winner(text) from public;
 
-grant execute on function public.reserve_numbers(text,text,integer[]) to anon, authenticated;
+grant execute on function public.start_infinitepay_payment(text,text,integer[]) to service_role;
 grant execute on function public.payment_status(text) to anon, authenticated;
 grant execute on function public.confirm_infinitepay_payment(text,text,text,text,integer) to service_role;
+grant execute on function public.cancel_infinitepay_pending(text) to service_role;
 grant execute on function public.admin_dashboard(text) to anon, authenticated;
 grant execute on function public.admin_set_payment(text,uuid,boolean) to anon, authenticated;
 grant execute on function public.admin_cancel_reservation(text,uuid) to anon, authenticated;
