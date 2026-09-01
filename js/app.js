@@ -11,7 +11,8 @@
     raffleState: null,
     ready: false,
     channel: null,
-    pending: loadPending()
+    pending: loadPending(),
+    pixCountdownTimer: null
   };
 
   const $ = (id) => document.getElementById(id);
@@ -24,7 +25,15 @@
     progressText: $("progressText"),
     selectedNumbers: $("selectedNumbers"),
     selectedTotal: $("selectedTotal"),
+    selectedNumbersMain: $("selectedNumbersMain"),
+    selectedTotalMain: $("selectedTotalMain"),
     clear: $("clearSelectionBtn"),
+    openCheckout: $("openCheckoutBtn"),
+    checkoutModal: $("checkoutModal"),
+    checkoutClose: $("checkoutCloseBtn"),
+    cancelChoiceModal: $("cancelChoiceModal"),
+    keepCheckout: $("keepCheckoutBtn"),
+    confirmCancelCheckout: $("confirmCancelCheckoutBtn"),
     form: $("purchaseForm"),
     name: $("nameInput"),
     phone: $("phoneInput"),
@@ -52,7 +61,9 @@
     personalPixAmount: $("personalPixAmount"),
     personalPixNumbers: $("personalPixNumbers"),
     copyPixKey: $("copyPixKeyBtn"),
-    sendWhatsapp: $("sendWhatsappBtn")
+    sendWhatsapp: $("sendWhatsappBtn"),
+    cancelPersonalPix: $("cancelPersonalPixBtn"),
+    personalPixCountdown: $("personalPixCountdown")
   };
 
   function pad(n) { return String(n).padStart(3, "0"); }
@@ -229,8 +240,18 @@
 
   function renderSelected() {
     const values = [...state.selected].sort((a, b) => a - b);
-    el.selectedNumbers.textContent = values.length ? values.map(pad).join(", ") : "Nenhum";
-    el.selectedTotal.textContent = money(values.length * cfg.unitPriceCents);
+    const numbersText = values.length ? values.map(pad).join(", ") : "Nenhum";
+    const totalText = money(values.length * cfg.unitPriceCents);
+
+    el.selectedNumbers.textContent = numbersText;
+    el.selectedTotal.textContent = totalText;
+    el.selectedNumbersMain.textContent = numbersText;
+    el.selectedTotalMain.textContent = totalText;
+
+    if (el.checkoutModal.classList.contains("checkout-modal--open") && values.length === 0) {
+      closeCheckoutSilently();
+      showToast("Os números selecionados ficaram indisponíveis. Escolha novamente.", "error");
+    }
   }
 
   function renderPublicWinner() {
@@ -266,12 +287,68 @@
     const method = selectedMethod();
     const total = money(count * cfg.unitPriceCents);
 
-    el.purchaseButton.disabled = blocked || count === 0;
+    el.openCheckout.disabled = blocked || count === 0;
+    if (blocked) el.openCheckout.textContent = "Vendas encerradas";
+    else if (!count) el.openCheckout.textContent = "Escolha seus números";
+    else el.openCheckout.textContent = `Confirmar ${count === 1 ? "número" : "números"} • ${total}`;
 
+    el.purchaseButton.disabled = blocked || count === 0;
     if (blocked) el.purchaseButton.textContent = "Vendas encerradas";
-    else if (!count) el.purchaseButton.textContent = "Escolha seus números";
-    else if (method === "personal_pix") el.purchaseButton.textContent = `Pagar ${total} por Pix pessoal`;
-    else el.purchaseButton.textContent = `Pagar ${total} pela InfinitePay`;
+    else if (method === "personal_pix") el.purchaseButton.textContent = `Continuar para Pix • ${total}`;
+    else el.purchaseButton.textContent = `Ir para InfinitePay • ${total}`;
+  }
+
+  function updateBodyModalState() {
+    const anyOpen =
+      el.checkoutModal.classList.contains("checkout-modal--open") ||
+      el.cancelChoiceModal.classList.contains("checkout-modal--open");
+    document.body.classList.toggle("modal-open", anyOpen);
+  }
+
+  function openCheckoutModal() {
+    if (!state.selected.size) {
+      showToast("Escolha pelo menos um número.", "error");
+      return;
+    }
+    renderSelected();
+    renderPaymentMethod();
+    el.checkoutModal.classList.add("checkout-modal--open");
+    el.checkoutModal.setAttribute("aria-hidden", "false");
+    updateBodyModalState();
+    setTimeout(() => el.name.focus(), 60);
+  }
+
+  function closeCheckoutSilently() {
+    el.checkoutModal.classList.remove("checkout-modal--open");
+    el.checkoutModal.setAttribute("aria-hidden", "true");
+    el.cancelChoiceModal.classList.remove("checkout-modal--open");
+    el.cancelChoiceModal.setAttribute("aria-hidden", "true");
+    updateBodyModalState();
+  }
+
+  function requestCloseCheckout() {
+    if (!el.checkoutModal.classList.contains("checkout-modal--open")) return;
+    el.cancelChoiceModal.classList.add("checkout-modal--open");
+    el.cancelChoiceModal.setAttribute("aria-hidden", "false");
+    updateBodyModalState();
+    setTimeout(() => el.keepCheckout.focus(), 40);
+  }
+
+  function keepCheckoutOpen() {
+    el.cancelChoiceModal.classList.remove("checkout-modal--open");
+    el.cancelChoiceModal.setAttribute("aria-hidden", "true");
+    updateBodyModalState();
+    setTimeout(() => el.name.focus(), 40);
+  }
+
+  function confirmCancelCheckout() {
+    state.selected.clear();
+    el.form.reset();
+    const infinite = document.querySelector('input[name="paymentMethod"][value="infinitepay"]');
+    if (infinite) infinite.checked = true;
+    closeCheckoutSilently();
+    renderAll();
+    showToast("Escolha cancelada. Nenhum número ficou preso.", "normal");
   }
 
   function buildRedirectUrl() {
@@ -409,12 +486,86 @@
     }
   }
 
+  function stopPersonalPixCountdown() {
+    if (state.pixCountdownTimer) {
+      clearInterval(state.pixCountdownTimer);
+      state.pixCountdownTimer = null;
+    }
+  }
+
+  function startPersonalPixCountdown(expiresAt) {
+    stopPersonalPixCountdown();
+
+    const render = async () => {
+      const end = new Date(expiresAt || 0).getTime();
+      const diff = end - Date.now();
+
+      if (!Number.isFinite(end) || diff <= 0) {
+        el.personalPixCountdown.textContent = "00:00";
+        stopPersonalPixCountdown();
+        await releaseExpired();
+        const pending = loadPending();
+        if (pending?.order_nsu) {
+          const status = await checkPaymentStatus(pending.order_nsu, true);
+          if (status?.payment_status === "expired") {
+            el.personalPixPanel.classList.add("hidden");
+            showToast("O prazo terminou e os números foram liberados.", "normal");
+            await loadAll();
+          }
+        }
+        return;
+      }
+
+      const total = Math.ceil(diff / 1000);
+      const min = Math.floor(total / 60);
+      const sec = total % 60;
+      el.personalPixCountdown.textContent = `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+    };
+
+    render();
+    state.pixCountdownTimer = setInterval(render, 1000);
+  }
+
+  async function cancelPersonalPixPurchase() {
+    const pending = loadPending();
+
+    if (!pending || pending.provider !== "personal_pix") {
+      showToast("Não encontrei um Pix pessoal em andamento.", "error");
+      return;
+    }
+
+    if (!confirm("Liberar agora os números deste pagamento?")) return;
+
+    el.cancelPersonalPix.disabled = true;
+    el.cancelPersonalPix.textContent = "Liberando...";
+
+    try {
+      await callGateway({
+        action: "cancel_personal_pix",
+        order_nsu: pending.order_nsu
+      });
+
+      stopPersonalPixCountdown();
+      savePending(null);
+      el.personalPixPanel.classList.add("hidden");
+      showToast("Compra cancelada. Os números estão disponíveis novamente.", "success");
+      await loadAll();
+    } catch (error) {
+      console.error(error);
+      showToast(error.message || "Não foi possível liberar os números.", "error");
+    } finally {
+      el.cancelPersonalPix.disabled = false;
+      el.cancelPersonalPix.textContent = "Não vou pagar — liberar números agora";
+    }
+  }
+
   function showPersonalPixPanel(order) {
     el.personalPixKey.textContent = cfg.personalPix.key;
     el.personalPixOwner.textContent = cfg.personalPix.owner;
     el.personalPixAmount.textContent = money(order.amount_cents);
     el.personalPixNumbers.textContent = (order.numbers || []).map(pad).join(", ");
     el.personalPixPanel.classList.remove("hidden");
+    startPersonalPixCountdown(order.expires_at);
     el.personalPixPanel.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -453,10 +604,16 @@
     }
 
     try {
-      await callGateway({
+      const contacted = await callGateway({
         action: "personal_pix_contacted",
         order_nsu: pending.order_nsu
       });
+
+      if (contacted?.expires_at) {
+        const updated = { ...pending, expires_at: contacted.expires_at };
+        savePending(updated);
+        startPersonalPixCountdown(contacted.expires_at);
+      }
     } catch (error) {
       console.warn(error);
     }
@@ -480,6 +637,25 @@
     window.open(url, "_blank", "noopener");
   }
 
+  el.openCheckout.addEventListener("click", openCheckoutModal);
+  el.checkoutClose.addEventListener("click", requestCloseCheckout);
+  el.checkoutModal.querySelector("[data-checkout-close]").addEventListener("click", requestCloseCheckout);
+  el.keepCheckout.addEventListener("click", keepCheckoutOpen);
+  el.confirmCancelCheckout.addEventListener("click", confirmCancelCheckout);
+
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+
+    if (el.cancelChoiceModal.classList.contains("checkout-modal--open")) {
+      keepCheckoutOpen();
+      return;
+    }
+
+    if (el.checkoutModal.classList.contains("checkout-modal--open")) {
+      requestCloseCheckout();
+    }
+  });
+
   el.clear.addEventListener("click", () => {
     state.selected.clear();
     renderGrid();
@@ -499,6 +675,7 @@
   });
 
   el.sendWhatsapp.addEventListener("click", sendPersonalPixWhatsapp);
+  el.cancelPersonalPix.addEventListener("click", cancelPersonalPixPurchase);
 
   el.form.addEventListener("submit", async event => {
     event.preventDefault();
@@ -528,11 +705,14 @@
           order_nsu: data.order_nsu,
           buyer_name: name,
           numbers: data.numbers || numbers,
-          amount_cents: data.amount_cents || numbers.length * cfg.unitPriceCents
+          amount_cents: data.amount_cents || numbers.length * cfg.unitPriceCents,
+          expires_at: data.expires_at
         };
 
         savePending(pending);
         state.selected.clear();
+        closeCheckoutSilently();
+        el.form.reset();
         renderAll();
         showPersonalPixPanel(pending);
         showToast("Pagamento Pix preparado. Faça o Pix e envie seus números pelo WhatsApp.", "success");
@@ -552,6 +732,7 @@
         });
 
         state.selected.clear();
+        closeCheckoutSilently();
         renderSelected();
         location.assign(data.url);
       }
@@ -595,7 +776,7 @@
 
   setInterval(async () => {
     await releaseExpired();
-  }, 60000);
+  }, 15000);
 
   setInterval(async () => {
     const pending = loadPending();
@@ -605,6 +786,7 @@
   }, 15000);
 
   window.addEventListener("beforeunload", () => {
+    stopPersonalPixCountdown();
     if (state.channel) db.removeChannel(state.channel);
   });
 })();

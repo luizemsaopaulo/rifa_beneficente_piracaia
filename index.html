@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#981b39">
   <meta name="description" content="Rifa beneficente com 200 números para ajudar no reparo do telhado após o temporal em Piracaia-SP. Prêmio de R$ 200 via Pix.">
   <title>Rifa Beneficente • Ajude no telhado</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260901-2">
+  <link rel="stylesheet" href="css/styles.css?v=20260901-4">
 </head>
 <body>
   <header class="hero">
@@ -126,61 +126,28 @@
 
     <section class="checkout">
       <section class="card">
-        <span class="kicker">2. FINALIZE SUA COMPRA</span>
-        <h2>Seus dados</h2>
+        <span class="kicker">2. CONFIRME SUA ESCOLHA</span>
+        <h2>Confira os números antes de continuar</h2>
 
-        <form id="purchaseForm" class="form">
-          <label>
-            Nome
-            <input id="nameInput" name="name" maxlength="80" autocomplete="name" placeholder="Digite seu nome" required>
-          </label>
-
-          <label>
-            WhatsApp com DDD
-            <input id="phoneInput" name="phone" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="(11) 99999-9999" required>
-          </label>
-
-          <div class="selection-box payment-summary">
-            <div>
-              <span>Números selecionados</span>
-              <strong id="selectedNumbers">Nenhum</strong>
-            </div>
-            <div class="payment-total">
-              <span>Total</span>
-              <strong id="selectedTotal">R$ 0,00</strong>
-            </div>
+        <div class="selection-box payment-summary confirmation-summary">
+          <div>
+            <span>Números selecionados</span>
+            <strong id="selectedNumbersMain">Nenhum</strong>
           </div>
+          <div class="payment-total">
+            <span>Total</span>
+            <strong id="selectedTotalMain">R$ 0,00</strong>
+          </div>
+        </div>
 
-          <fieldset class="payment-methods">
-            <legend>Método de pagamento</legend>
+        <button id="openCheckoutBtn" class="button button--primary button--large" type="button" disabled>
+          Escolha seus números
+        </button>
 
-            <label class="payment-method payment-method--active" id="methodInfiniteCard">
-              <input type="radio" name="paymentMethod" value="infinitepay" checked>
-              <span class="payment-method__icon">⚡</span>
-              <span>
-                <strong>InfinitePay</strong>
-                <small>Pagamento online. Após a aprovação, seus números são confirmados automaticamente.</small>
-              </span>
-            </label>
-
-            <label class="payment-method" id="methodPersonalCard">
-              <input type="radio" name="paymentMethod" value="personal_pix">
-              <span class="payment-method__icon">◆</span>
-              <span>
-                <strong>Pix pessoal</strong>
-                <small>Faça o Pix e depois envie os números escolhidos pelo WhatsApp para conferência.</small>
-              </span>
-            </label>
-          </fieldset>
-
-          <button id="purchaseButton" class="button button--primary button--large" type="submit">
-            Escolha seus números
-          </button>
-
-          <p class="form-help" id="paymentHelp">
-            Cada número custa <strong>R$ 10,00</strong>. Pela InfinitePay, o pagamento é identificado automaticamente.
-          </p>
-        </form>
+        <p class="form-help">
+          Seus números <strong>não ficam presos apenas por selecionar ou abrir a confirmação</strong>.
+          O bloqueio só acontece quando você realmente mandar iniciar o pagamento.
+        </p>
       </section>
 
       <aside class="card rules">
@@ -196,12 +163,10 @@
           <div><dt>Participam</dt><dd>Números com pagamento confirmado</dd></div>
         </dl>
         <p>
-          Apenas números com pagamento confirmado participam do sorteio. O resultado oficial fica registrado no banco e não pode ser realizado novamente depois que houver um vencedor.
+          Apenas números com pagamento confirmado participam do sorteio. O resultado oficial fica registrado no banco.
         </p>
       </aside>
     </section>
-
-
 
     <section id="personalPixPanel" class="card personal-pix-panel hidden" aria-live="polite">
       <span class="kicker">PIX PESSOAL</span>
@@ -228,9 +193,18 @@
         </div>
 
         <div class="pix-actions">
+          <div class="pix-timeout-box">
+            <span>Tempo para concluir o Pix</span>
+            <strong id="personalPixCountdown">10:00</strong>
+            <small>Se não houver confirmação, os números voltam automaticamente para Disponível.</small>
+          </div>
+
           <button id="copyPixKeyBtn" class="button button--soft button--large" type="button">Copiar chave Pix</button>
           <button id="sendWhatsappBtn" class="button button--whatsapp button--large" type="button">
             Já paguei — enviar meus números no WhatsApp
+          </button>
+          <button id="cancelPersonalPixBtn" class="button button--cancel-payment" type="button">
+            Não vou pagar — liberar números agora
           </button>
         </div>
       </div>
@@ -255,10 +229,93 @@
     </div>
   </footer>
 
+  
+  <div id="checkoutModal" class="checkout-modal" aria-hidden="true">
+    <div class="checkout-modal__backdrop" data-checkout-close></div>
+    <div class="checkout-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="checkoutModalTitle">
+      <button id="checkoutCloseBtn" class="checkout-modal__close" type="button" aria-label="Fechar">×</button>
+
+      <span class="kicker">CONFIRMAÇÃO</span>
+      <h2 id="checkoutModalTitle">Informe seus dados para pagar</h2>
+      <p class="checkout-modal__intro">
+        Abrir esta caixa <strong>não bloqueia seus números</strong>. Eles só serão bloqueados quando você clicar para iniciar o pagamento.
+      </p>
+
+      <div class="selection-box payment-summary checkout-modal__summary">
+        <div>
+          <span>Números escolhidos</span>
+          <strong id="selectedNumbers">Nenhum</strong>
+        </div>
+        <div class="payment-total">
+          <span>Total</span>
+          <strong id="selectedTotal">R$ 0,00</strong>
+        </div>
+      </div>
+
+      <form id="purchaseForm" class="form">
+        <label>
+          Nome
+          <input id="nameInput" name="name" maxlength="80" autocomplete="name" placeholder="Digite seu nome" required>
+        </label>
+
+        <label>
+          WhatsApp com DDD
+          <input id="phoneInput" name="phone" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="(11) 99999-9999" required>
+        </label>
+
+        <fieldset class="payment-methods">
+          <legend>Método de pagamento</legend>
+
+          <label class="payment-method payment-method--active" id="methodInfiniteCard">
+            <input type="radio" name="paymentMethod" value="infinitepay" checked>
+            <span class="payment-method__icon">⚡</span>
+            <span>
+              <strong>InfinitePay</strong>
+              <small>Pagamento online com confirmação automática.</small>
+            </span>
+          </label>
+
+          <label class="payment-method" id="methodPersonalCard">
+            <input type="radio" name="paymentMethod" value="personal_pix">
+            <span class="payment-method__icon">◆</span>
+            <span>
+              <strong>Pix pessoal</strong>
+              <small>Faça o Pix e depois envie os números pelo WhatsApp para conferência.</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <button id="purchaseButton" class="button button--primary button--large" type="submit">
+          Ir para pagamento
+        </button>
+
+        <p class="form-help" id="paymentHelp">
+          Pela InfinitePay, o pagamento é identificado automaticamente.
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <div id="cancelChoiceModal" class="checkout-modal checkout-modal--confirm" aria-hidden="true">
+    <div class="checkout-modal__backdrop"></div>
+    <div class="checkout-modal__dialog checkout-modal__dialog--confirm" role="alertdialog" aria-modal="true" aria-labelledby="cancelChoiceTitle">
+      <div class="cancel-choice-icon">?</div>
+      <h2 id="cancelChoiceTitle">Cancelar esta escolha?</h2>
+      <p>
+        Se sair agora, os números selecionados serão apagados da sua tela.
+        <strong>Nenhum número ficará preso.</strong>
+      </p>
+      <div class="cancel-choice-actions">
+        <button id="keepCheckoutBtn" class="button button--soft" type="button">Continuar aqui</button>
+        <button id="confirmCancelCheckoutBtn" class="button button--danger" type="button">Sim, cancelar escolha</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=20260901-2"></script>
-  <script src="js/app.js?v=20260901-2"></script>
+  <script src="js/config.js?v=20260901-4"></script>
+  <script src="js/app.js?v=20260901-4"></script>
 </body>
 </html>

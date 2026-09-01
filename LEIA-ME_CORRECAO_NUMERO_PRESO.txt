@@ -1,0 +1,27 @@
+CORREÇÃO - NÚMERO PRESO SEM PAGAMENTO
+=====================================
+
+A página agora usa esta regra no PIX PESSOAL:
+
+1. Ao iniciar o Pix, o número fica temporariamente indisponível por 10 minutos.
+   Isso é necessário para duas pessoas não pagarem pelo mesmo número.
+2. Se a pessoa desistir, há o botão:
+   "Não vou pagar — liberar números agora"
+   e o número volta imediatamente para Disponível.
+3. Se ninguém fizer nada, após 10 minutos o número volta automaticamente.
+4. Se a pessoa realmente fizer o Pix e tocar em:
+   "Já paguei — enviar meus números no WhatsApp"
+   o prazo passa para 30 minutos para o organizador conferir.
+5. Após o organizador clicar em Confirmar pagamento, o número vira Pago.
+
+PARA ATUALIZAR
+1. Supabase > SQL Editor:
+   execute supabase/CORRIGIR_BLOQUEIO_PIX.sql
+2. Edge Functions > infinitepay-gateway > Code:
+   substitua pelo novo supabase/functions/infinitepay-gateway/index.ts
+   e faça Deploy.
+3. Publique esta versão nova no GitHub Pages.
+4. Use Ctrl+F5 para evitar cache.
+
+O teste que já aparece no painel pode ser liberado imediatamente
+clicando no botão "Cancelar" na linha dele.

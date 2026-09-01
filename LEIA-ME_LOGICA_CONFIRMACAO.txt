@@ -1,0 +1,23 @@
+RIFA - NOVA LÓGICA DE CONFIRMAÇÃO
+=================================
+
+1. A pessoa escolhe os números.
+2. Nada é gravado no Supabase e nenhum número é bloqueado.
+3. Clica em "Confirmar número(s)".
+4. Abre uma caixa com nome, WhatsApp e forma de pagamento.
+5. Abrir a caixa ainda não bloqueia nada.
+6. Se fechar no X, fundo da tela ou Esc, abre outra pergunta:
+   "Cancelar esta escolha?"
+7. Se confirmar, a seleção é apagada e nenhum número fica preso.
+8. Somente ao clicar em "Ir para InfinitePay" ou "Continuar para Pix"
+   o servidor tenta bloquear os números e criar o pagamento.
+9. Se outra pessoa tiver iniciado pagamento de algum deles antes,
+   o servidor recusa e a pessoa precisa escolher outro.
+
+BACKEND
+Esta alteração é somente de frontend.
+Se o SQL e a Edge Function da versão LIBERAÇÃO AUTOMÁTICA já foram atualizados,
+não é necessário alterá-los de novo.
+
+PUBLICAÇÃO
+Substitua os arquivos no GitHub pelos desta versão e use Ctrl+F5.
