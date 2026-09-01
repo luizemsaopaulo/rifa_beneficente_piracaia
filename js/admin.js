@@ -75,6 +75,16 @@
     return new Date(value).toLocaleString("pt-BR");
   }
 
+  function money(cents) {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format((Number(cents) || 0) / 100);
+  }
+
+  function paymentInfo(r) {
+    const method = r.capture_method === "pix" ? "Pix" : (r.capture_method ? r.capture_method : "InfinitePay");
+    const receipt = r.receipt_url ? `<a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener noreferrer">Comprovante</a>` : "";
+    return `<div><strong>${escapeHtml(method)}</strong>${receipt ? `<br><small>${receipt}</small>` : ""}</div>`;
+  }
+
   async function rpc(name, args = {}) {
     const { data, error } = await db.rpc(name, { p_password: state.password, ...args });
     if (error) throw error;
@@ -172,6 +182,8 @@
       const haystack = [
         r.buyer_name,
         r.whatsapp,
+        r.order_nsu,
+        r.transaction_nsu,
         ...(r.numbers || []).map(pad),
         ...(r.numbers || []).map(String)
       ].join(" ").toLowerCase();
@@ -201,7 +213,7 @@
     const rows = filteredReservations();
 
     if (!rows.length) {
-      el.tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Nenhuma reserva encontrada.</td></tr>';
+      el.tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">Nenhuma reserva encontrada.</td></tr>';
       el.cards.innerHTML = '<p class="muted">Nenhuma reserva encontrada.</p>';
       return;
     }
@@ -211,7 +223,9 @@
         <td><strong>${escapeHtml(r.buyer_name)}</strong></td>
         <td>${escapeHtml(formatPhone(r.whatsapp))}</td>
         <td><div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div></td>
+        <td><strong>${money(r.expected_amount_cents)}</strong></td>
         <td>${statusBadge(r.payment_status)}</td>
+        <td>${paymentInfo(r)}</td>
         <td>${escapeHtml(formatDate(r.created_at))}</td>
         <td>${actionsHtml(r)}</td>
       </tr>
@@ -224,6 +238,7 @@
           ${statusBadge(r.payment_status)}
         </div>
         <div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div>
+        <p><strong>${money(r.expected_amount_cents)}</strong> • InfinitePay</p>
         <small>Reservado em ${escapeHtml(formatDate(r.created_at))}</small>
         ${actionsHtml(r)}
       </article>
@@ -338,14 +353,19 @@
     if (!reservations.length) return showToast("Não há dados para exportar.", "error");
 
     const rows = [
-      ["Comprador", "WhatsApp", "Números", "Status", "Reservado em", "Pago em"],
+      ["Comprador", "WhatsApp", "Números", "Valor", "Status", "Pedido", "Transação", "Método", "Reservado em", "Pago em", "Comprovante"],
       ...reservations.map(r => [
         r.buyer_name,
         r.whatsapp,
         (r.numbers || []).map(pad).join(" "),
+        money(r.expected_amount_cents),
         r.payment_status === "paid" ? "Pago" : "Aguardando",
+        r.order_nsu || "",
+        r.transaction_nsu || "",
+        r.capture_method || "InfinitePay",
         formatDate(r.created_at),
-        formatDate(r.paid_at)
+        formatDate(r.paid_at),
+        r.receipt_url || ""
       ])
     ];
 

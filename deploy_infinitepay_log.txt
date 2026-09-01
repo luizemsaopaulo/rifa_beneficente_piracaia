@@ -1,0 +1,27 @@
+============================================================
+RIFA - DEPLOY INFINITEPAY / SUPABASE
+Inicio: 01/09/2026 16:40:21,65
+Pasta: C:\Users\Luiz\Desktop\GitHub\P ginas\rifa_beneficente_piracaia
+Projeto: qzpezwscmwfznzzbrxpb
+============================================================
+Node: v24.18.0
+npx: 11.16.0
+2.116.0
+[?25l|
+â€¢  Fetching projects[1G[J[?25hCannot find project ref. Have you run supabase link?
+
+  
+   LINKED | ORG ID               | REFERENCE ID         | NAME                         | REGION           | CREATED AT (UTC)    
+  --------|----------------------|----------------------|------------------------------|------------------|---------------------
+          | diqdjldlbsidpjcxawdw | ubhxzrfhokzkdndjlrwt | Catinho-do-Petisco's Project | Canada (Central) | 2026-08-16 11:39:01 
+
+NotFound: FileSystem.readFile (C:\Users\Luiz\.supabase\profile)
+Using access token for profile: supabase
+Supabase CLI 2.116.0
+Using profile: supabase (supabase.co)
+Using access token for profile: supabase
+Uploading asset (infinitepay-gateway): supabase/functions/infinitepay-gateway/index.ts
+2026/09/01 16:40:39 HTTP POST: https://api.supabase.com/v1/projects/qzpezwscmwfznzzbrxpb/functions/deploy
+Using access token for profile: supabase
+2026/09/01 16:40:39 HTTP GET: https://api.supabase.com/v1/projects/qzpezwscmwfznzzbrxpb
+unexpected deploy status 403: {"message":"Your account does not have the necessary privileges to access this endpoint. For more details, refer to our documentation https://supabase.com/docs/guides/platform/access-control"}

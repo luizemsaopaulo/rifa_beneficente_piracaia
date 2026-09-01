@@ -3,13 +3,15 @@
 
   const cfg = window.RIFA_CONFIG;
   const db = window.supabaseClient;
+  const PENDING_KEY = "rifa_infinitepay_pending_v1";
 
   const state = {
     selected: new Set(),
     numbers: new Map(),
     raffleState: null,
     ready: false,
-    channel: null
+    channel: null,
+    pending: loadPending()
   };
 
   const $ = (id) => document.getElementById(id);
@@ -22,6 +24,7 @@
     progressBar: $("progressBar"),
     progressText: $("progressText"),
     selectedNumbers: $("selectedNumbers"),
+    selectedTotal: $("selectedTotal"),
     clear: $("clearSelectionBtn"),
     form: $("reserveForm"),
     name: $("nameInput"),
@@ -36,15 +39,29 @@
     countDays: $("countDays"),
     countHours: $("countHours"),
     countMinutes: $("countMinutes"),
-    countSeconds: $("countSeconds")
+    countSeconds: $("countSeconds"),
+    paymentCard: $("paymentStatusCard"),
+    paymentTitle: $("paymentStatusTitle"),
+    paymentText: $("paymentStatusText"),
+    continuePayment: $("continuePaymentBtn"),
+    receiptLink: $("receiptLink")
   };
 
-  function pad(n) {
-    return String(n).padStart(3, "0");
+  function pad(n) { return String(n).padStart(3, "0"); }
+  function digits(value) { return String(value || "").replace(/\D/g, ""); }
+  function money(cents) {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format((Number(cents) || 0) / 100);
   }
 
-  function digits(value) {
-    return String(value || "").replace(/\D/g, "");
+  function loadPending() {
+    try { return JSON.parse(localStorage.getItem(PENDING_KEY) || "null"); }
+    catch { return null; }
+  }
+
+  function savePending(value) {
+    state.pending = value;
+    if (value) localStorage.setItem(PENDING_KEY, JSON.stringify(value));
+    else localStorage.removeItem(PENDING_KEY);
   }
 
   function showToast(message, kind = "normal") {
@@ -52,7 +69,7 @@
     el.toast.dataset.kind = kind;
     el.toast.classList.add("toast--show");
     clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => el.toast.classList.remove("toast--show"), 3300);
+    showToast.timer = setTimeout(() => el.toast.classList.remove("toast--show"), 3600);
   }
 
   function setConnection(text, ok = false) {
@@ -64,6 +81,17 @@
     el.setupWarning.classList.remove("hidden");
     setConnection("Banco não instalado");
     el.loading.textContent = "O banco do Supabase ainda precisa ser instalado.";
+  }
+
+  function showPaymentCard(type, title, text, options = {}) {
+    el.paymentCard.classList.remove("hidden", "payment-status-card--success", "payment-status-card--warning", "payment-status-card--error");
+    if (type) el.paymentCard.classList.add(`payment-status-card--${type}`);
+    el.paymentTitle.textContent = title;
+    el.paymentText.textContent = text;
+
+    el.continuePayment.classList.toggle("hidden", !options.continuePayment);
+    el.receiptLink.classList.toggle("hidden", !options.receiptUrl);
+    if (options.receiptUrl) el.receiptLink.href = options.receiptUrl;
   }
 
   async function loadAll() {
@@ -91,7 +119,6 @@
 
   function subscribeRealtime() {
     if (state.channel) db.removeChannel(state.channel);
-
     state.channel = db.channel("rifa-public-live")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "raffle_numbers" }, payload => {
         state.numbers.set(Number(payload.new.number), payload.new.status);
@@ -120,7 +147,6 @@
 
   function renderGrid() {
     const fragment = document.createDocumentFragment();
-
     for (let n = 1; n <= cfg.totalNumbers; n++) {
       const status = state.numbers.get(n) || "available";
       const button = document.createElement("button");
@@ -150,12 +176,11 @@
           else state.selected.add(n);
           renderGrid();
           renderSelected();
+          renderSalesState();
         });
       }
-
       fragment.appendChild(button);
     }
-
     el.grid.replaceChildren(fragment);
   }
 
@@ -165,30 +190,25 @@
     const reserved = values.filter(v => v === "reserved").length;
     const paid = values.filter(v => v === "paid").length;
     const chosen = reserved + paid;
-    const percent = (chosen / cfg.totalNumbers) * 100;
-
     el.available.textContent = available;
     el.reserved.textContent = reserved;
     el.paid.textContent = paid;
-    el.progressBar.style.width = `${percent}%`;
+    el.progressBar.style.width = `${(chosen / cfg.totalNumbers) * 100}%`;
     el.progressText.textContent = `${chosen} de ${cfg.totalNumbers} números já escolhidos.`;
   }
 
   function renderSelected() {
     const values = [...state.selected].sort((a, b) => a - b);
     el.selectedNumbers.textContent = values.length ? values.map(pad).join(", ") : "Nenhum";
+    el.selectedTotal.textContent = money(values.length * cfg.unitPriceCents);
   }
 
   function renderUnavailable() {
-    const unavailable = [...state.numbers.entries()]
-      .filter(([, status]) => status !== "available")
-      .sort((a, b) => a[0] - b[0]);
-
+    const unavailable = [...state.numbers.entries()].filter(([, status]) => status !== "available").sort((a, b) => a[0] - b[0]);
     if (!unavailable.length) {
       el.unavailableList.innerHTML = '<span class="muted">Nenhum número escolhido ainda.</span>';
       return;
     }
-
     el.unavailableList.innerHTML = unavailable.map(([n, status]) =>
       `<span class="status-chip status-chip--${status}">${pad(n)} • ${status === "paid" ? "Pago" : "Reservado"}</span>`
     ).join("");
@@ -196,11 +216,7 @@
 
   function renderPublicWinner() {
     const winner = Number(state.raffleState?.winner_number || 0);
-    if (!winner) {
-      el.winnerPublic.classList.add("hidden");
-      return;
-    }
-
+    if (!winner) return el.winnerPublic.classList.add("hidden");
     el.winnerPublicNumber.textContent = pad(winner);
     el.winnerPublic.classList.remove("hidden");
   }
@@ -208,15 +224,131 @@
   function renderSalesState() {
     const closed = Boolean(state.raffleState?.sales_closed);
     const pastDraw = Date.now() >= new Date(cfg.drawAt).getTime();
-    el.reserveButton.disabled = closed || pastDraw;
-    el.reserveButton.textContent = (closed || pastDraw) ? "Reservas encerradas" : "Confirmar reserva";
+    const count = state.selected.size;
+    const blocked = closed || pastDraw;
+    el.reserveButton.disabled = blocked || count === 0;
+    if (blocked) el.reserveButton.textContent = "Reservas encerradas";
+    else if (!count) el.reserveButton.textContent = "Escolha seus números";
+    else el.reserveButton.textContent = `Pagar ${money(count * cfg.unitPriceCents)} pela InfinitePay`;
+  }
+
+  function buildRedirectUrl() {
+    if (location.protocol === "file:") return "http://localhost:8080/index.html";
+    const url = new URL(location.href);
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  }
+
+  async function callGateway(payload) {
+    const response = await fetch(cfg.infinitePay.gatewayUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": cfg.supabase.publishableKey
+      },
+      body: JSON.stringify(payload)
+    });
+    let data = null;
+    try { data = await response.json(); } catch { data = {}; }
+    if (!response.ok) throw new Error(data?.message || data?.error || `Erro ${response.status} no pagamento.`);
+    return data;
+  }
+
+  async function createCheckout(orderNsu) {
+    const data = await callGateway({
+      action: "create",
+      order_nsu: orderNsu,
+      redirect_url: buildRedirectUrl()
+    });
+    if (!data?.url) throw new Error("A InfinitePay não retornou o link de pagamento.");
+    return data.url;
+  }
+
+  async function checkPaymentStatus(orderNsu, quiet = false) {
+    const { data, error } = await db.rpc("payment_status", { p_order_nsu: orderNsu });
+    if (error) {
+      if (!quiet) console.error(error);
+      return null;
+    }
+    if (!data?.found) return null;
+
+    if (data.payment_status === "paid") {
+      showPaymentCard("success", "Pagamento confirmado!", `Seus números ${data.numbers.map(pad).join(", ")} estão confirmados para o sorteio.`, { receiptUrl: data.receipt_url });
+      savePending(null);
+      return data;
+    }
+
+    const pending = loadPending();
+    showPaymentCard("warning", "Pagamento aguardando confirmação", `Sua reserva ${data.numbers.map(pad).join(", ")} está guardada. Finalize o pagamento de ${money(data.expected_amount_cents)} pela InfinitePay.`, { continuePayment: true, receiptUrl: data.receipt_url });
+    if (pending) state.pending = pending;
+    return data;
+  }
+
+  async function handlePaymentReturn() {
+    const params = new URLSearchParams(location.search);
+    const orderNsu = params.get("order_nsu");
+    const transactionNsu = params.get("transaction_nsu");
+    const slug = params.get("slug");
+    const receiptUrl = params.get("receipt_url");
+
+    if (orderNsu && transactionNsu && slug) {
+      showPaymentCard("warning", "Confirmando seu pagamento...", "Recebemos o retorno da InfinitePay e estamos validando a transação.");
+      try {
+        await callGateway({
+          action: "confirm",
+          order_nsu: orderNsu,
+          transaction_nsu: transactionNsu,
+          slug,
+          receipt_url: receiptUrl || null
+        });
+      } catch (error) {
+        console.error(error);
+      }
+      for (let i = 0; i < 5; i++) {
+        const status = await checkPaymentStatus(orderNsu, true);
+        if (status?.payment_status === "paid") break;
+        await new Promise(resolve => setTimeout(resolve, 1200));
+      }
+      const clean = new URL(location.href);
+      clean.search = "";
+      history.replaceState({}, "", clean.toString());
+      return;
+    }
+
+    if (state.pending?.order_nsu) await checkPaymentStatus(state.pending.order_nsu, true);
+  }
+
+  async function retryPendingPayment() {
+    const pending = loadPending();
+    if (!pending?.order_nsu) return showToast("Não encontrei uma reserva pendente.", "error");
+
+    if (pending.checkout_url) {
+      location.assign(pending.checkout_url);
+      return;
+    }
+
+    el.continuePayment.disabled = true;
+    el.continuePayment.textContent = "Gerando checkout...";
+    try {
+      const url = await createCheckout(pending.order_nsu);
+      savePending({ ...pending, checkout_url: url });
+      location.assign(url);
+    } catch (error) {
+      showToast(error.message || "Não foi possível abrir o pagamento.", "error");
+      el.continuePayment.disabled = false;
+      el.continuePayment.textContent = "Continuar pagamento";
+    }
   }
 
   el.clear.addEventListener("click", () => {
     state.selected.clear();
     renderGrid();
     renderSelected();
+    renderSalesState();
   });
+
+  el.continuePayment.addEventListener("click", retryPendingPayment);
 
   el.form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -226,12 +358,12 @@
     const phone = digits(el.phone.value);
     const numbers = [...state.selected].sort((a, b) => a - b);
 
-    if (numbers.length === 0) return showToast("Escolha pelo menos um número.", "error");
+    if (!numbers.length) return showToast("Escolha pelo menos um número.", "error");
     if (name.length < 2) return showToast("Digite um nome válido.", "error");
     if (phone.length < 10 || phone.length > 15) return showToast("Digite um WhatsApp válido com DDD.", "error");
 
     el.reserveButton.disabled = true;
-    el.reserveButton.textContent = "Registrando...";
+    el.reserveButton.textContent = "Reservando números...";
 
     const { data, error } = await db.rpc("reserve_numbers", {
       p_name: name,
@@ -243,18 +375,36 @@
       console.error(error);
       showToast(error.message || "Não foi possível reservar.", "error");
       await loadAll();
+      renderSalesState();
       return;
     }
 
+    const orderNsu = data.order_nsu;
+    savePending({
+      order_nsu: orderNsu,
+      numbers: data.numbers,
+      amount_cents: data.amount_cents,
+      checkout_url: null
+    });
+
     state.selected.clear();
-    el.form.reset();
-    showToast(`Reserva confirmada: ${numbers.map(pad).join(", ")}`, "success");
-    await loadAll();
+    renderSelected();
+    el.reserveButton.textContent = "Abrindo InfinitePay...";
+
+    try {
+      const checkoutUrl = await createCheckout(orderNsu);
+      savePending({ ...state.pending, checkout_url: checkoutUrl });
+      location.assign(checkoutUrl);
+    } catch (gatewayError) {
+      console.error(gatewayError);
+      showPaymentCard("error", "Reserva feita, mas o checkout não abriu", `Seus números estão reservados. Clique em “Continuar pagamento” para tentar gerar o link da InfinitePay novamente.`, { continuePayment: true });
+      showToast(gatewayError.message || "Não foi possível abrir a InfinitePay.", "error");
+      await loadAll();
+    }
   });
 
   function updateCountdown() {
     const diff = new Date(cfg.drawAt).getTime() - Date.now();
-
     if (diff <= 0) {
       el.countDays.textContent = "0";
       el.countHours.textContent = "00";
@@ -262,29 +412,23 @@
       el.countSeconds.textContent = "00";
       return;
     }
-
     const sec = Math.floor(diff / 1000);
-    const days = Math.floor(sec / 86400);
-    const hours = Math.floor((sec % 86400) / 3600);
-    const minutes = Math.floor((sec % 3600) / 60);
-    const seconds = sec % 60;
-
-    el.countDays.textContent = String(days);
-    el.countHours.textContent = String(hours).padStart(2, "0");
-    el.countMinutes.textContent = String(minutes).padStart(2, "0");
-    el.countSeconds.textContent = String(seconds).padStart(2, "0");
+    el.countDays.textContent = String(Math.floor(sec / 86400));
+    el.countHours.textContent = String(Math.floor((sec % 86400) / 3600)).padStart(2, "0");
+    el.countMinutes.textContent = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
+    el.countSeconds.textContent = String(sec % 60).padStart(2, "0");
   }
 
   el.phone.addEventListener("input", () => {
-    let v = digits(el.phone.value).slice(0, 11);
-    if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
-    if (v.length > 10) v = `${v.slice(0,10)}-${v.slice(10)}`;
-    el.phone.value = v;
+    const d = digits(el.phone.value).slice(0, 11);
+    if (d.length <= 2) el.phone.value = d;
+    else if (d.length <= 7) el.phone.value = `(${d.slice(0,2)}) ${d.slice(2)}`;
+    else el.phone.value = `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
   });
 
   updateCountdown();
   setInterval(updateCountdown, 1000);
-  loadAll();
+  loadAll().then(handlePaymentReturn);
 
   window.addEventListener("beforeunload", () => {
     if (state.channel) db.removeChannel(state.channel);

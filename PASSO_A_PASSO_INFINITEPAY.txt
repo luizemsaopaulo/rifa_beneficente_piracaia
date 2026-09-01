@@ -1,0 +1,6 @@
+1) Execute supabase\INSTALAR_SUPABASE.sql no SQL Editor.
+2) Execute DEPLOY_INFINITEPAY.bat para publicar o webhook/gateway.
+3) Execute ABRIR_RIFA.bat.
+4) Escolha 3 numeros: o total deve mostrar R$ 30,00.
+5) Clique em pagar: deve abrir o checkout da InfinitePay.
+6) Apos pagamento aprovado, os numeros mudam para Pago automaticamente.

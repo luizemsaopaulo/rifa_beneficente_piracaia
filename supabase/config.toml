@@ -1,0 +1,4 @@
+project_id = "qzpezwscmwfznzzbrxpb"
+
+[functions.infinitepay-gateway]
+verify_jwt = false

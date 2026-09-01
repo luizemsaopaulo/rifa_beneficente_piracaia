@@ -1,73 +1,87 @@
-RIFA BENEFICENTE PIRACAIA - PROJETO COMPLETO
-===============================================
+RIFA BENEFICENTE PIRACAIA - VERSAO COMPLETA INFINITEPAY
+==========================================================
 
-PRÊMIO
-R$ 200 via Pix
+VALOR: R$ 10,00 por numero
+NUMEROS: 001 a 200
+PREMIO: R$ 200 via Pix
+SORTEIO: 18/10/2026 as 20h
+LIVE: Instagram @TUDODEHELENA
 
-NÚMEROS
-001 a 200
+PAGAMENTO
+- Somente InfinitePay no site.
+- InfiniteTag configurada: luizwl
+- O valor e calculado automaticamente: quantidade x R$ 10,00.
+- Exemplo: 3 numeros = R$ 30,00.
+- O site NAO exibe Pix pessoal.
+- A InfinitePay gera um checkout diferente para cada reserva.
+- O webhook valida o pagamento na InfinitePay antes de marcar como Pago.
 
-SORTEIO
-18/10/2026 às 20h
-Ao vivo no Instagram @TUDODEHELENA
-https://www.instagram.com/TUDODEHELENA/
+FLUXO
+1. Pessoa escolhe os numeros.
+2. Informa nome e WhatsApp.
+3. O Supabase reserva os numeros e cria um order_nsu exclusivo.
+4. A Edge Function cria o checkout da InfinitePay com o valor correto.
+5. A pessoa paga no checkout.
+6. O webhook consulta payment_check na InfinitePay.
+7. Se o valor e o pagamento forem validos, os numeros mudam automaticamente para Pago.
+8. Apenas numeros pagos entram no sorteio oficial.
 
-REPORTAGENS
-G1:
-https://g1.globo.com/sp/vale-do-paraiba-regiao/noticia/2026/09/01/temporal-com-granizo-gigante-destelha-mais-de-400-casas-e-destroi-carros-em-piracaia-sp.ghtml
-
-Brasil Urgente:
-https://www.youtube.com/watch?v=E1zrlKCCSYE
-
-ARQUIVOS PRINCIPAIS
-- index.html ............ página pública
-- admin.html ............ painel do organizador
-- css/styles.css ........ visual público
-- css/admin.css ......... visual administrativo
-- js/config.js .......... URL + publishable key do Supabase
-- js/app.js ............. reservas e tempo real
-- js/admin.js ........... compradores, pagamentos e sorteio
-- supabase/INSTALAR_SUPABASE.sql ... banco, RLS, RPCs e Realtime
-- ABRIR_RIFA.bat ........ abre o site localmente
-- ABRIR_ADMIN.bat ....... abre o painel localmente
-
-IMPORTANTE - PRIMEIRA INSTALAÇÃO
-1. Entre no Supabase.
-2. Abra SQL Editor.
-3. Cole TODO o conteúdo de:
+PRIMEIRA INSTALACAO / ATUALIZACAO
+1. No Supabase > SQL Editor, execute TODO o arquivo:
    supabase/INSTALAR_SUPABASE.sql
-4. Execute.
-5. Depois abra ABRIR_RIFA.bat.
+   Pode executar novamente mesmo se voce rodou a versao anterior.
 
-SEGURANÇA
-- A publishable key pode ficar no frontend.
-- NÃO existe service_role key no projeto.
-- Nome e WhatsApp dos compradores ficam na tabela reservations e NÃO possuem
-  policy pública de leitura.
-- O público só lê a situação dos números e o estado público da rifa.
-- As gravações são feitas por RPC com validações e bloqueio de concorrência.
-- A senha administrativa não está em js/config.js.
-- O arquivo SQL contém somente o HASH SHA-256 da senha, não a senha em texto.
+2. Publique a Edge Function da InfinitePay.
+   Opcao facil no Windows: execute DEPLOY_INFINITEPAY.bat.
+   Se pedir login, execute no Prompt:
+      npx supabase login
+   e depois execute DEPLOY_INFINITEPAY.bat novamente.
+
+   Comando equivalente:
+      npx supabase functions deploy infinitepay-gateway --project-ref qzpezwscmwfznzzbrxpb --no-verify-jwt
+
+3. Abra ABRIR_RIFA.bat para testar localmente.
+4. Abra ABRIR_ADMIN.bat para o painel.
+
+ARQUIVOS IMPORTANTES
+- index.html
+- admin.html
+- css/styles.css
+- css/admin.css
+- js/config.js
+- js/app.js
+- js/admin.js
+- supabase/INSTALAR_SUPABASE.sql
+- supabase/functions/infinitepay-gateway/index.ts
+- supabase/config.toml
+- ABRIR_RIFA.bat
+- ABRIR_ADMIN.bat
+- DEPLOY_INFINITEPAY.bat
 
 PAINEL ADMIN
-- números disponíveis (os que faltam)
-- reservados
-- pagos
-- compradores
-- busca por nome, WhatsApp e número
-- confirmar/desfazer pagamento
-- cancelar reserva e liberar os números
+- disponiveis, reservados e pagos
+- compradores e WhatsApp
+- valor de cada reserva
+- pedido/Order NSU
+- metodo de pagamento e comprovante quando disponivel
+- busca
+- confirmar/desfazer pagamento manualmente como contingencia
+- cancelar reserva e liberar numeros
 - fechar/reabrir vendas
-- exportar compradores em CSV
-- mapa dos 200 números
-- simulação do sorteio sem salvar
-- sorteio oficial somente a partir de 18/10/2026 às 20h
-- vencedor oficial gravado no banco, impedindo segundo sorteio
+- CSV
+- sorteio oficial protegido
 
-OBSERVAÇÃO
-O valor cobrado por número não foi colocado porque ainda não foi informado.
-O sistema já controla a situação Reservado/Pago independentemente do valor.
+SEGURANCA
+- A publishable key do Supabase pode ficar no frontend.
+- Nenhuma service_role key esta no site.
+- A service_role e usada somente dentro da Edge Function, via segredo automatico do Supabase.
+- Nome e WhatsApp nao possuem leitura publica.
+- O valor e calculado no banco e conferido novamente na Edge Function.
+- O webhook chama payment_check da InfinitePay antes de confirmar o pagamento.
+- Nenhuma chave Pix pessoal esta incluida neste projeto.
 
-ABRIR LOCALMENTE
-Dê dois cliques em ABRIR_RIFA.bat.
-Se Python estiver instalado, será usado http://localhost:8080.
+SENHA ADMIN (mantida da versao anterior)
+Rifa-akjLk-ichXf-Mfh3W
+
+REPORTAGENS
+G1 e Brasil Urgente continuam na pagina publica.

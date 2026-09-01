@@ -20,6 +20,7 @@
         </p>
 
         <div class="hero__facts">
+          <div class="fact"><span>Valor</span><strong>R$ 10 por número</strong></div>
           <div class="fact"><span>Prêmio</span><strong>R$ 200 no Pix</strong></div>
           <div class="fact"><span>Números</span><strong>001 a 200</strong></div>
           <div class="fact"><span>Sorteio</span><strong>18/10/2026 • 20h</strong></div>
@@ -43,6 +44,16 @@
   </header>
 
   <main class="shell main">
+    <section id="paymentStatusCard" class="payment-status-card hidden" aria-live="polite">
+      <span class="kicker">PAGAMENTO INFINITEPAY</span>
+      <h2 id="paymentStatusTitle">Verificando pagamento...</h2>
+      <p id="paymentStatusText">Aguarde enquanto consultamos a situação da sua reserva.</p>
+      <div class="payment-status-actions">
+        <button id="continuePaymentBtn" class="button button--primary hidden" type="button">Continuar pagamento</button>
+        <a id="receiptLink" class="button button--soft hidden" target="_blank" rel="noopener noreferrer">Ver comprovante</a>
+      </div>
+    </section>
+
     <section id="winnerPublic" class="winner-public hidden">
       <span>🎉 RESULTADO OFICIAL</span>
       <strong id="winnerPublicNumber">000</strong>
@@ -130,18 +141,25 @@
             <input id="phoneInput" name="phone" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="(11) 99999-9999" required>
           </label>
 
-          <div class="selection-box">
-            <span>Números selecionados</span>
-            <strong id="selectedNumbers">Nenhum</strong>
+          <div class="selection-box payment-summary">
+            <div>
+              <span>Números selecionados</span>
+              <strong id="selectedNumbers">Nenhum</strong>
+            </div>
+            <div class="payment-total">
+              <span>Total</span>
+              <strong id="selectedTotal">R$ 0,00</strong>
+            </div>
           </div>
 
           <button id="reserveButton" class="button button--primary button--large" type="submit">
-            Confirmar reserva
+            Escolha seus números
           </button>
 
           <p class="form-help">
-            A reserva não significa pagamento confirmado. O organizador atualizará o número para
-            <strong>Pago</strong> no painel administrativo após a confirmação.
+            Cada número custa <strong>R$ 10,00</strong>. Ao confirmar, seus números são reservados e
+            você é direcionado para o checkout seguro da <strong>InfinitePay</strong>. Após a aprovação,
+            o Supabase muda os números automaticamente para <strong>Pago</strong>.
           </p>
         </form>
       </section>
@@ -150,6 +168,8 @@
         <span class="kicker">TRANSPARÊNCIA</span>
         <h2>Informações do sorteio</h2>
         <dl>
+          <div><dt>Valor</dt><dd>R$ 10 por número</dd></div>
+          <div><dt>Pagamento</dt><dd>InfinitePay</dd></div>
           <div><dt>Prêmio</dt><dd>R$ 200 via Pix</dd></div>
           <div><dt>Data</dt><dd>18/10/2026</dd></div>
           <div><dt>Horário</dt><dd>20h</dd></div>
@@ -157,7 +177,7 @@
           <div><dt>Participam</dt><dd>Números com pagamento confirmado</dd></div>
         </dl>
         <p>
-          O sorteio oficial fica registrado no banco e não pode ser realizado novamente depois que houver um vencedor.
+          Apenas números com pagamento confirmado participam do sorteio. O resultado oficial fica registrado no banco e não pode ser realizado novamente depois que houver um vencedor.
         </p>
       </aside>
     </section>
