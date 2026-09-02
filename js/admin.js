@@ -279,7 +279,10 @@
     const stats = data.stats || {};
     el.available.textContent = stats.available ?? 0;
     el.pending.textContent = stats.pending ?? 0;
-    el.paid.textContent = stats.paid ?? 0;
+    const totalRaisedCents = (data.reservations || [])
+      .filter(r => r.payment_status === "paid")
+      .reduce((total, r) => total + Number(r.expected_amount_cents || 0), 0);
+    el.paid.textContent = money(totalRaisedCents);
     el.buyers.textContent = stats.buyers ?? 0;
 
     renderSales(data.state || {});

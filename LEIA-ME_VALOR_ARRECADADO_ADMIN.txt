@@ -1,0 +1,35 @@
+RIFA BENEFICENTE — VALOR ARRECADADO NO ADMIN
+
+ALTERAÇÃO
+O card que antes mostrava:
+- Pagos
+- Participam do sorteio
+
+agora mostra:
+- Valor arrecadado
+- Total em reais dos pagamentos confirmados.
+
+EXEMPLO
+Se houver 11 números pagos de R$ 10,00:
+Valor arrecadado = R$ 110,00.
+
+CÁLCULO
+O painel soma expected_amount_cents somente dos pedidos com
+payment_status = "paid".
+
+Pedidos pendentes, expirados ou cancelados não entram no valor.
+
+NÃO FOI ALTERADO
+- Página pública
+- Pix pessoal
+- InfinitePay
+- Supabase / SQL
+- Edge Function
+- WhatsApp de confirmação
+- Sorteio
+- Seções recolhidas do Admin
+- Dados dos pedidos
+
+Não precisa executar SQL nem atualizar a Edge Function.
+Depois de publicar no GitHub, faça Ctrl+F5 no Admin.
+Se usa o PWA instalado, feche e abra novamente.

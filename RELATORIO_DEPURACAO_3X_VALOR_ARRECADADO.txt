@@ -1,0 +1,45 @@
+RELATÓRIO DE DEPURAÇÃO — VALOR ARRECADADO NO ADMIN
+===========================================================
+
+DEPURAÇÃO 1 — SINTAXE / TEXTO / CÁLCULO
+[OK] Sintaxe JS: admin.js
+[OK] Sintaxe JS: app.js
+[OK] Sintaxe JS: config.js
+[OK] Sintaxe JS: admin-sw.js
+[OK] Card agora diz Valor arrecadado
+[OK] Valor inicial está em reais
+[OK] Texto antigo Participam do sorteio foi removido
+[OK] Cálculo considera somente payment_status paid
+[OK] Cálculo soma expected_amount_cents
+[OK] Resultado usa função money()
+
+DEPURAÇÃO 2 — COMPARAÇÃO COM A VERSÃO ANTERIOR
+Arquivos comprovadamente NÃO alterados:
+[OK] index.html
+[OK] js/app.js
+[OK] js/config.js
+[OK] css/styles.css
+[OK] css/admin.css
+[OK] admin.webmanifest
+[OK] supabase/functions/infinitepay-gateway/index.ts
+[OK] supabase/ATUALIZAR_ADMIN_WHATSAPP_CONFIRMACAO.sql
+
+Arquivos alterados intencionalmente:
+[OK] admin.html — troca do card
+[OK] js/admin.js — cálculo do valor arrecadado
+[OK] admin-sw.js — somente versão do cache PWA
+
+DEPURAÇÃO 3 — SIMULAÇÃO / REGRESSÃO
+[OK] Simulação soma somente os pedidos pagos
+[OK] Simulação resulta em R$ 40,00
+[OK] Números que faltam continua recolhido
+[OK] Mapa dos 200 continua recolhido
+[OK] Pedidos e pagamentos continua aberto
+[OK] WhatsApp de confirmação foi preservado
+[OK] Cache do PWA atualizado
+
+RESULTADO FINAL
+As 3 depurações passaram.
+O card mostra o total arrecadado em reais.
+Somente pagamentos confirmados entram no valor.
+Página pública, pagamentos, banco, sorteio, WhatsApp e Edge Function não foram alterados.
