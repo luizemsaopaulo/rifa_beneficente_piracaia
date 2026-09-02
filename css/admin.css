@@ -200,3 +200,89 @@
     text-align: right;
   }
 }
+
+
+/* ===== POP-UP FIXO + SENHA DE CONFIRMACAO ===== */
+html.admin-modal-open,
+body.admin-modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.admin-confirm-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  margin: 0 !important;
+  padding: 18px !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: auto !important;
+}
+
+.admin-confirm-modal.hidden {
+  display: none !important;
+}
+
+.admin-confirm-modal__backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+}
+
+.admin-confirm-modal__dialog {
+  position: relative !important;
+  inset: auto !important;
+  width: min(470px, calc(100vw - 36px)) !important;
+  max-height: calc(100dvh - 36px) !important;
+  overflow: auto !important;
+  margin: auto !important;
+}
+
+.admin-confirm-modal__pin {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.admin-confirm-modal__pin label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: .82rem;
+  font-weight: 850;
+  color: #4f3c43;
+}
+
+.admin-confirm-modal__pin input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d9cbd0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: .2em;
+  text-align: center;
+  outline: none;
+}
+
+.admin-confirm-modal__pin input:focus {
+  border-color: #b5153f;
+  box-shadow: 0 0 0 3px rgba(181, 21, 63, .12);
+}
+
+.admin-confirm-modal__pin-error {
+  display: block;
+  margin-top: 7px;
+  color: #b42318;
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.admin-confirm-modal__pin-error.hidden {
+  display: none !important;
+}

@@ -1,0 +1,28 @@
+RIFA BENEFICENTE — POP-UP FIXO + SENHA 6253
+
+- Confirmações abrem em pop-up fixo no centro da tela.
+- A página não desce para o final.
+- Ao fechar o pop-up, você continua no mesmo ponto da página.
+- Ações administrativas que alteram dados exigem a senha 6253.
+
+A senha é exigida para:
+- Confirmar/desmarcar pagamento.
+- Não pagou / liberar números.
+- Cancelar pedido.
+- Abrir o WhatsApp de confirmação pela primeira vez.
+- Abrir ou fechar as vendas.
+- Realizar o sorteio oficial.
+
+Pop-ups apenas informativos, como "Mensagem já enviada", continuam apenas com OK.
+
+SEGURANÇA
+- 6253 não fica escrito no JavaScript.
+- O Supabase guarda somente o hash em tabela privada.
+- A validação exige sessão Admin válida.
+
+ATUALIZAÇÃO
+1. Execute supabase/ATUALIZAR_ADMIN_POPUP_SENHA.sql no SQL Editor.
+2. Não precisa alterar a Edge Function.
+3. Publique a pasta completa.
+4. Faça Ctrl+F5 no Admin.
+5. Se usa PWA, feche e abra novamente.

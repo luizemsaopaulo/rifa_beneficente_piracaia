@@ -11,7 +11,9 @@
     dashboard: null,
     channel: null,
     deferredInstallPrompt: null,
-    confirmResolver: null
+    confirmResolver: null,
+    confirmScrollY: 0,
+    confirmSingle: false
   };
 
   const $ = (id) => document.getElementById(id);
@@ -55,6 +57,9 @@
     confirmTitle: $("adminConfirmTitle"),
     confirmMessage: $("adminConfirmMessage"),
     confirmDetails: $("adminConfirmDetails"),
+    confirmPinWrap: $("adminConfirmPinWrap"),
+    confirmPin: $("adminConfirmPin"),
+    confirmPinError: $("adminConfirmPinError"),
     confirmCancel: $("adminConfirmCancelBtn"),
     confirmOk: $("adminConfirmOkBtn")
   };
@@ -237,18 +242,94 @@
   }
   function confirmAction({ title="Confirmar ação", message="", details="", confirmText="Confirmar", icon="?", danger=false, single=false } = {}) {
     return new Promise(resolve => {
-      state.confirmResolver=resolve; el.confirmIcon.textContent=icon; el.confirmTitle.textContent=title; el.confirmMessage.textContent=message;
-      el.confirmOk.textContent=confirmText; el.confirmOk.classList.toggle("button--danger",danger); el.confirmOk.classList.toggle("button--primary",!danger);
+      state.confirmResolver = resolve;
+      state.confirmSingle = Boolean(single);
+      state.confirmScrollY = window.scrollY;
+
+      el.confirmIcon.textContent = icon;
+      el.confirmTitle.textContent = title;
+      el.confirmMessage.textContent = message;
+      el.confirmOk.textContent = confirmText;
+      el.confirmOk.classList.toggle("button--danger", danger);
+      el.confirmOk.classList.toggle("button--primary", !danger);
       el.confirmCancel.classList.toggle("hidden", Boolean(single));
-      if(details){ el.confirmDetails.innerHTML=details; el.confirmDetails.classList.remove("hidden"); } else { el.confirmDetails.innerHTML=""; el.confirmDetails.classList.add("hidden"); }
-      el.confirmModal.classList.remove("hidden"); el.confirmModal.setAttribute("aria-hidden","false"); setTimeout(() => (single ? el.confirmOk : el.confirmCancel).focus(),20);
+
+      if (details) {
+        el.confirmDetails.innerHTML = details;
+        el.confirmDetails.classList.remove("hidden");
+      } else {
+        el.confirmDetails.innerHTML = "";
+        el.confirmDetails.classList.add("hidden");
+      }
+
+      el.confirmPin.value = "";
+      el.confirmPinError.classList.add("hidden");
+      el.confirmPinWrap.classList.toggle("hidden", Boolean(single));
+
+      document.documentElement.classList.add("admin-modal-open");
+      document.body.classList.add("admin-modal-open");
+
+      el.confirmModal.classList.remove("hidden");
+      el.confirmModal.setAttribute("aria-hidden", "false");
+      setTimeout(() => (single ? el.confirmOk : el.confirmPin).focus(), 20);
     });
   }
+
   function closeConfirmModal(result) {
-    el.confirmModal.classList.add("hidden"); el.confirmModal.setAttribute("aria-hidden","true");
+    el.confirmModal.classList.add("hidden");
+    el.confirmModal.setAttribute("aria-hidden", "true");
     el.confirmCancel.classList.remove("hidden");
-    const resolver=state.confirmResolver; state.confirmResolver=null; if(resolver) resolver(Boolean(result));
+    el.confirmPinWrap.classList.remove("hidden");
+    el.confirmPin.value = "";
+    el.confirmPinError.classList.add("hidden");
+
+    document.documentElement.classList.remove("admin-modal-open");
+    document.body.classList.remove("admin-modal-open");
+
+    const y = state.confirmScrollY;
+    const resolver = state.confirmResolver;
+    state.confirmResolver = null;
+    state.confirmSingle = false;
+
+    requestAnimationFrame(() => window.scrollTo({ top: y, left: 0, behavior: "auto" }));
+    if (resolver) resolver(Boolean(result));
   }
+
+  async function validateActionPin() {
+    const pin = String(el.confirmPin.value || "").trim();
+
+    if (!/^\d{4}$/.test(pin)) {
+      el.confirmPinError.textContent = "Digite a senha de 4 números.";
+      el.confirmPinError.classList.remove("hidden");
+      el.confirmPin.focus();
+      return false;
+    }
+
+    try {
+      const { data, error } = await db.rpc("admin_verify_action_pin_session", {
+        p_session_token: state.sessionToken,
+        p_pin: pin
+      });
+      if (error) throw error;
+
+      if (!data?.ok) {
+        el.confirmPinError.textContent = "Senha incorreta.";
+        el.confirmPinError.classList.remove("hidden");
+        el.confirmPin.select();
+        return false;
+      }
+
+      el.confirmPinError.classList.add("hidden");
+      return true;
+    } catch (error) {
+      console.error(error);
+      el.confirmPinError.textContent = error.message || "Não foi possível validar a senha.";
+      el.confirmPinError.classList.remove("hidden");
+      el.confirmPin.select();
+      return false;
+    }
+  }
+
   async function restoreSession() {
     if(!state.sessionToken) return;
     try { await refreshDashboard(); showPanel(); subscribeAdminRealtime(); showToast("Sessão restaurada neste aparelho.","success"); }
@@ -486,7 +567,15 @@
   async function toggleSales() {
     const closed = Boolean(state.dashboard?.state?.sales_closed);
     const verb = closed ? "reabrir" : "fechar";
-    if (!confirm(`Deseja ${verb} as vendas?`)) return;
+
+    const ok = await confirmAction({
+      title: closed ? "Reabrir vendas?" : "Fechar vendas?",
+      message: `Confirme para ${verb} as vendas da rifa.`,
+      confirmText: closed ? "Sim, reabrir vendas" : "Sim, fechar vendas",
+      icon: closed ? "↻" : "!",
+      danger: !closed
+    });
+    if (!ok) return;
 
     try {
       await rpc("admin_set_sales_closed", { p_closed: !closed });
@@ -519,7 +608,15 @@
 
   async function officialDraw() {
     if (el.drawConfirm.value.trim().toUpperCase() !== "SORTEAR") return;
-    if (!confirm("ATENÇÃO: este é o sorteio OFICIAL e o resultado será gravado definitivamente. Continuar?")) return;
+
+    const ok = await confirmAction({
+      title: "Realizar sorteio OFICIAL?",
+      message: "ATENÇÃO: o resultado será gravado definitivamente e não poderá ser sorteado novamente.",
+      confirmText: "Sim, realizar sorteio oficial",
+      icon: "🎉",
+      danger: true
+    });
+    if (!ok) return;
 
     try {
       el.officialDraw.disabled = true;
@@ -601,8 +698,22 @@
   el.loginForm.addEventListener("submit", login);
   el.installApp.addEventListener("click", installAdminApp);
   el.confirmCancel.addEventListener("click", () => closeConfirmModal(false));
-  el.confirmOk.addEventListener("click", () => closeConfirmModal(true));
+  el.confirmOk.addEventListener("click", async () => {
+    if (state.confirmSingle) {
+      closeConfirmModal(true);
+      return;
+    }
+    const valid = await validateActionPin();
+    if (valid) closeConfirmModal(true);
+  });
   el.confirmModal.querySelector(".admin-confirm-modal__backdrop").addEventListener("click", () => closeConfirmModal(false));
+  el.confirmPin.addEventListener("keydown", async event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (state.confirmSingle) return;
+    const valid = await validateActionPin();
+    if (valid) closeConfirmModal(true);
+  });
   el.refresh.addEventListener("click", () => refreshDashboard().catch(e => showToast(e.message, "error")));
   el.logout.addEventListener("click", logout);
   el.toggleSales.addEventListener("click", toggleSales);

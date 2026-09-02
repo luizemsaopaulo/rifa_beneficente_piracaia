@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="assets/admin-icon-192.png">
   <title>Painel Admin • Rifa Beneficente</title>
   <link rel="stylesheet" href="css/styles.css?v=20260901-2">
-  <link rel="stylesheet" href="css/admin.css?v=20260902-4">
+  <link rel="stylesheet" href="css/admin.css?v=20260902-6">
 </head>
 <body class="admin-body">
   <header class="admin-topbar">
@@ -200,6 +200,19 @@
       <h2 id="adminConfirmTitle">Confirmar ação</h2>
       <p id="adminConfirmMessage"></p>
       <div id="adminConfirmDetails" class="admin-confirm-modal__details hidden"></div>
+      <div id="adminConfirmPinWrap" class="admin-confirm-modal__pin">
+        <label for="adminConfirmPin">Senha para confirmar</label>
+        <input
+          id="adminConfirmPin"
+          type="password"
+          inputmode="numeric"
+          autocomplete="off"
+          maxlength="4"
+          pattern="[0-9]{4}"
+          placeholder="Digite a senha"
+        >
+        <small id="adminConfirmPinError" class="admin-confirm-modal__pin-error hidden">Senha incorreta.</small>
+      </div>
       <div class="admin-confirm-modal__actions">
         <button id="adminConfirmCancelBtn" class="button button--soft" type="button">Voltar</button>
         <button id="adminConfirmOkBtn" class="button button--primary" type="button">Confirmar</button>
@@ -211,6 +224,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=20260901-2"></script>
-  <script src="js/admin.js?v=20260902-5"></script>
+  <script src="js/admin.js?v=20260902-6"></script>
 </body>
 </html>

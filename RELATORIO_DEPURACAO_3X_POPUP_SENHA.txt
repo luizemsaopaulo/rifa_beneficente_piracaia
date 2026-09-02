@@ -1,0 +1,46 @@
+RELATÓRIO DE DEPURAÇÃO — POP-UP FIXO + SENHA ADMIN
+============================================================
+
+DEPURAÇÃO 1 — MODAL / SINTAXE / AÇÕES
+[OK] Sintaxe admin.js
+[OK] Sintaxe app.js
+[OK] Sintaxe config.js
+[OK] Sintaxe admin-sw.js
+[OK] PIN no modal
+[OK] Modal fixo
+[OK] Scroll travado
+[OK] Posição salva
+[OK] Posição restaurada
+[OK] PIN via Supabase
+[OK] 6253 não aparece no JS
+[OK] Abrir/fechar vendas usa popup
+[OK] Sorteio usa popup
+[OK] Nenhum confirm() nativo restante
+
+DEPURAÇÃO 2 — COMPARAÇÃO BYTE A BYTE
+Não alterados:
+[OK] index.html
+[OK] js/app.js
+[OK] js/config.js
+[OK] css/styles.css
+[OK] admin.webmanifest
+[OK] supabase/functions/infinitepay-gateway/index.ts
+[OK] supabase/ATUALIZAR_ADMIN_WHATSAPP_CONFIRMACAO.sql
+
+DEPURAÇÃO 3 — REGRESSÃO / SEGURANÇA
+[OK] Valor arrecadado preservado
+[OK] Seções recolhidas preservadas
+[OK] WhatsApp uso único preservado
+[OK] Página pública idêntica
+[OK] App público idêntico
+[OK] Edge idêntica
+[OK] SQL usa hash 6253
+[OK] SQL tabela privada
+[OK] SQL exige sessão Admin
+[OK] Cache PWA v6
+
+RESULTADO FINAL
+As 3 depurações passaram.
+O pop-up fica no centro da tela e a posição da página é preservada.
+As ações administrativas de confirmação exigem a senha 6253.
+Página pública, Pix, InfinitePay e Edge Function foram preservados.
