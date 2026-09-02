@@ -1,7 +1,7 @@
 -- ============================================================
 -- RIFA BENEFICENTE PIRACAIA - SUPABASE + INFINITEPAY
 -- 200 numeros | R$ 10 por numero | Premio R$ 200 no Pix
--- Sorteio: 18/10/2026 20:00 | Instagram @TUDODEHELENA
+-- Sorteio: 18/10/2026 20:00 | Instagram @TUDO.DEHELENA
 -- ============================================================
 -- Este instalador pode ser executado novamente.
 -- Ele preserva os pedidos existentes e migra o antigo status Reservado para Em pagamento.
@@ -86,12 +86,12 @@ select n, 'available' from generate_series(1, 200) n
 on conflict (number) do nothing;
 
 insert into public.raffle_public_state(id, sales_closed, draw_at, instagram_handle)
-values (1, false, '2026-10-18 20:00:00-03'::timestamptz, '@TUDODEHELENA')
+values (1, false, '2026-10-18 20:00:00-03'::timestamptz, '@TUDO.DEHELENA')
 on conflict (id) do nothing;
 
 update public.raffle_public_state
 set draw_at = '2026-10-18 20:00:00-03'::timestamptz,
-    instagram_handle = '@TUDODEHELENA'
+    instagram_handle = '@TUDO.DEHELENA'
 where id = 1;
 
 insert into private.raffle_admin_secret(id, password_sha256)
