@@ -76,3 +76,127 @@
 
 .payment-badge--expired { background: #f3f4f6; color: #6b7280; }
 \n\n/* ===== PWA ADMIN + CONFIRMAÇÕES SEGURAS ===== */\n.admin-topbar__actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; justify-content:flex-end; }\n.button--install { border:1px solid #86efac; background:#dcfce7; color:#166534; font-weight:800; }\n.admin-confirm-modal { position:fixed; inset:0; z-index:900; display:grid; place-items:center; padding:16px; }\n.admin-confirm-modal__backdrop { position:absolute; inset:0; background:rgba(20,15,18,.68); backdrop-filter:blur(4px); }\n.admin-confirm-modal__dialog { position:relative; z-index:1; width:min(470px,100%); padding:24px; border-radius:20px; background:#fff; border:1px solid #eadce0; box-shadow:0 28px 80px rgba(0,0,0,.28); text-align:center; }\n.admin-confirm-modal__icon { display:grid; place-items:center; width:58px; height:58px; margin:0 auto 12px; border-radius:50%; background:#fff1f2; color:#b5153f; font-size:1.45rem; font-weight:900; }\n.admin-confirm-modal__dialog h2 { margin:0 0 8px; }\n.admin-confirm-modal__dialog p { margin:0; color:#75636a; line-height:1.55; }\n.admin-confirm-modal__details { margin-top:14px; padding:12px; border-radius:12px; background:#faf5f6; border:1px solid #eadce0; text-align:left; font-size:.88rem; line-height:1.55; }\n.admin-confirm-modal__actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:18px; }\n.mini-button--reactivate { background:#e0f2fe; color:#075985; }\n.expired-help { display:block; margin-top:4px; color:#6b7280; font-size:.72rem; }\n@media(max-width:560px){ .admin-topbar__actions{width:100%;justify-content:stretch}.admin-topbar__actions .button{flex:1}.admin-confirm-modal__actions{grid-template-columns:1fr} }\n
+
+/* ===== WHATSAPP DE CONFIRMACAO DO PAGAMENTO ===== */
+.admin-phone {
+  font: inherit;
+}
+
+.admin-phone--plain {
+  color: inherit;
+}
+
+.admin-phone--whatsapp {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #08783f;
+  font-weight: 850;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-phone--whatsapp:hover,
+.admin-phone--whatsapp:focus-visible {
+  color: #065f46;
+  outline: none;
+  text-decoration-thickness: 2px;
+}
+
+.admin-phone--sent {
+  color: #667085;
+}
+
+.admin-phone--sent:hover,
+.admin-phone--sent:focus-visible {
+  color: #475467;
+}
+
+
+/* ===== SECOES RECOLHIVEIS DO ADMIN ===== */
+.admin-collapsible > summary {
+  display: block;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-collapsible__summary .section-head {
+  margin: 0;
+  align-items: center;
+}
+
+.admin-collapsible__summary h2 {
+  margin-bottom: 0;
+}
+
+.admin-collapsible__side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-collapsible__chevron {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 999px;
+  background: #f5eef1;
+  color: #6f4b58;
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+  transition: transform .18s ease, background .18s ease;
+}
+
+.admin-collapsible > summary:hover .admin-collapsible__chevron,
+.admin-collapsible > summary:focus-visible .admin-collapsible__chevron {
+  background: #f0dde3;
+}
+
+.admin-collapsible > summary:focus-visible {
+  outline: 3px solid rgba(181, 21, 63, .18);
+  outline-offset: 5px;
+  border-radius: 10px;
+}
+
+.admin-collapsible[open] .admin-collapsible__chevron {
+  transform: rotate(180deg);
+}
+
+.admin-collapsible__body {
+  padding-top: 18px;
+}
+
+@media (max-width: 700px) {
+  .admin-collapsible__summary .section-head {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .admin-collapsible__side {
+    margin-left: auto;
+  }
+
+  .admin-collapsible__summary .section-head > div:first-child {
+    min-width: 0;
+  }
+
+  .admin-collapsible__summary h2 {
+    font-size: 1.18rem;
+  }
+
+  .admin-collapsible__side > strong {
+    font-size: .78rem;
+    text-align: right;
+  }
+}

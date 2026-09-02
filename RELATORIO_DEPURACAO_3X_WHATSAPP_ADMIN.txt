@@ -1,0 +1,56 @@
+RELATÓRIO DE DEPURAÇÃO — WHATSAPP DE CONFIRMAÇÃO ADMIN
+============================================================
+
+DEPURAÇÃO 1 — SINTAXE / DOM / FUNÇÕES
+[OK] node --check admin.js
+[OK] node --check app.js
+[OK] node --check config.js
+[OK] node --check admin-sw.js
+[OK] Telefone clicável só para Pago
+[OK] Confirmação antes de abrir WhatsApp
+[OK] Bloqueio de segundo envio no cliente
+[OK] Bloqueio de segundo envio no servidor
+[OK] Mensagem contém Boa sorte
+[OK] Mensagem contém Que Deus abençoe
+[OK] Phone handler vinculado
+[OK] IDs do Admin continuam válidos
+
+DEPURAÇÃO 2 — COMPARAÇÃO COM A VERSÃO ANTERIOR
+Arquivos confirmados byte a byte como NÃO ALTERADOS:
+[OK] index.html
+[OK] js/app.js
+[OK] js/config.js
+[OK] css/styles.css
+[OK] admin.webmanifest
+[OK] assets/admin-icon-192.png
+[OK] assets/admin-icon-512.png
+[OK] supabase/functions/infinitepay-gateway/index.ts
+[OK] ABRIR_RIFA.bat
+[OK] ABRIR_ADMIN.bat
+
+Arquivos alterados intencionalmente:
+[OK] admin.html
+[OK] js/admin.js
+[OK] css/admin.css
+[OK] admin-sw.js
+[OK] supabase/INSTALAR_SUPABASE.sql
+[OK] Novo: supabase/ATUALIZAR_ADMIN_WHATSAPP_CONFIRMACAO.sql
+[OK] Novo: LEIA-ME_WHATSAPP_CONFIRMACAO_ADMIN.txt
+
+DEPURAÇÃO 3 — REGRA DE USO ÚNICO
+[OK] Pendente é bloqueado
+[OK] Primeiro clique em Pago é aceito
+[OK] Segundo clique é bloqueado
+[OK] Campo persistente existe no SQL
+[OK] RPC exige sessão Admin
+[OK] RPC exige payment_status Pago
+[OK] RPC usa FOR UPDATE
+[OK] Edge Function permaneceu idêntica
+
+RESULTADO FINAL
+As 3 depurações passaram.
+O telefone fica clicável apenas em pedidos pagos.
+Antes de abrir o WhatsApp existe uma confirmação.
+O primeiro uso é gravado no Supabase.
+Tentativas seguintes são bloqueadas pelo Admin e também pelo banco.
+Página pública, Pix pessoal, InfinitePay e Edge Function não foram alterados.

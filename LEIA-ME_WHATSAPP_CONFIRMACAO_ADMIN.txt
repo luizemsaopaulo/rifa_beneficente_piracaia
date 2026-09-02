@@ -1,0 +1,40 @@
+RIFA BENEFICENTE — WHATSAPP DE CONFIRMAÇÃO NO ADMIN
+===================================================
+
+COMO FUNCIONA
+- O telefone do comprador fica clicável SOMENTE quando o pedido estiver como PAGO.
+- Ao tocar no telefone, aparece uma caixa de confirmação com:
+  nome, números, valor e WhatsApp.
+- Ao confirmar, o Supabase registra que essa confirmação já foi usada.
+- Depois o WhatsApp abre com a mensagem pronta:
+
+  Olá, [nome]! ✅
+  Seu pagamento da Rifa Beneficente foi confirmado.
+  🎟️ Seus números: ...
+  🍀 Boa sorte!
+  Muito obrigado pela participação. Que Deus abençoe! 🙏
+
+USO ÚNICO
+- O controle é salvo no Supabase, não só no celular.
+- Se tentar tocar novamente, inclusive em outro aparelho, o Admin informa
+  que a mensagem já foi enviada e não abre o WhatsApp de novo.
+- O número fica com um ✓ depois que a confirmação foi registrada.
+
+SEGURANÇA
+- Pedido Pendente não abre mensagem de confirmação.
+- É obrigatório o pedido estar como Pago.
+- A gravação de "mensagem enviada" é feita por RPC protegida pela sessão Admin.
+- A marcação é atômica para impedir dois cliques simultâneos.
+
+ATUALIZAÇÃO
+1. Supabase > SQL Editor.
+2. Execute:
+   supabase/ATUALIZAR_ADMIN_WHATSAPP_CONFIRMACAO.sql
+3. Não precisa alterar a Edge Function.
+4. Publique os arquivos desta versão no GitHub.
+5. Abra o Admin e faça Ctrl+F5 uma vez.
+6. Se estiver usando o PWA instalado, feche e abra novamente após a atualização.
+
+OBSERVAÇÃO
+O site abre o WhatsApp com o texto preenchido. O envio final da mensagem
+continua sendo feito pelo próprio WhatsApp.

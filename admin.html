@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="assets/admin-icon-192.png">
   <title>Painel Admin • Rifa Beneficente</title>
   <link rel="stylesheet" href="css/styles.css?v=20260901-2">
-  <link rel="stylesheet" href="css/admin.css?v=20260902-2">
+  <link rel="stylesheet" href="css/admin.css?v=20260902-4">
 </head>
 <body class="admin-body">
   <header class="admin-topbar">
@@ -77,31 +77,43 @@
         <button id="toggleSalesBtn" class="button button--danger" type="button">Fechar vendas</button>
       </section>
 
-      <section class="card">
-        <div class="section-head">
-          <div>
-            <span class="kicker">NÚMEROS QUE FALTAM</span>
-            <h2>Disponíveis para venda</h2>
+      <details id="availableNumbersSection" class="card admin-collapsible">
+        <summary class="admin-collapsible__summary">
+          <div class="section-head">
+            <div>
+              <span class="kicker">NÚMEROS QUE FALTAM</span>
+              <h2>Disponíveis para venda</h2>
+            </div>
+            <div class="admin-collapsible__side">
+              <strong id="availableHeadline">0 disponíveis</strong>
+              <span class="admin-collapsible__chevron" aria-hidden="true">⌄</span>
+            </div>
           </div>
-          <strong id="availableHeadline">0 disponíveis</strong>
+        </summary>
+        <div class="admin-collapsible__body">
+          <div id="availableNumbersList" class="chip-list admin-available-list"></div>
         </div>
-        <div id="availableNumbersList" class="chip-list admin-available-list"></div>
-      </section>
+      </details>
 
-      <section class="card">
-        <div class="section-head">
-          <div>
-            <span class="kicker">MAPA DOS 200 NÚMEROS</span>
-            <h2>Situação de cada número</h2>
+      <details id="numberMapSection" class="card admin-collapsible">
+        <summary class="admin-collapsible__summary">
+          <div class="section-head">
+            <div>
+              <span class="kicker">MAPA DOS 200 NÚMEROS</span>
+              <h2>Situação de cada número</h2>
+            </div>
+            <span class="admin-collapsible__chevron" aria-hidden="true">⌄</span>
           </div>
+        </summary>
+        <div class="admin-collapsible__body">
+          <div class="legend">
+            <span><i class="dot dot--available"></i>Disponível</span>
+            <span><i class="dot dot--pending"></i>Em pagamento</span>
+            <span><i class="dot dot--paid"></i>Pago</span>
+          </div>
+          <div id="adminNumberGrid" class="number-grid number-grid--admin"></div>
         </div>
-        <div class="legend">
-          <span><i class="dot dot--available"></i>Disponível</span>
-          <span><i class="dot dot--pending"></i>Em pagamento</span>
-          <span><i class="dot dot--paid"></i>Pago</span>
-        </div>
-        <div id="adminNumberGrid" class="number-grid number-grid--admin"></div>
-      </section>
+      </details>
 
       <section class="card">
         <div class="section-head buyer-head">
@@ -199,6 +211,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=20260901-2"></script>
-  <script src="js/admin.js?v=20260902-2"></script>
+  <script src="js/admin.js?v=20260902-3"></script>
 </body>
 </html>

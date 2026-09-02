@@ -1,0 +1,20 @@
+RIFA BENEFICENTE — SEÇÕES RECOLHIDAS NO ADMIN
+
+NÚMEROS QUE FALTAM
+- Inicia recolhido.
+
+MAPA DOS 200 NÚMEROS
+- Inicia recolhido.
+
+PEDIDOS E PAGAMENTOS
+- Continua aberto por padrão.
+
+Clique ou toque no cabeçalho das duas seções recolhidas para abrir/fechar.
+
+Não precisa executar SQL.
+Não precisa atualizar Edge Function.
+Não houve alteração na página pública, Pix pessoal, InfinitePay, WhatsApp,
+Supabase, sorteio ou regras de pagamento.
+
+Depois de publicar, faça Ctrl+F5 no Admin.
+Se usa o PWA instalado, feche e abra novamente depois da atualização.

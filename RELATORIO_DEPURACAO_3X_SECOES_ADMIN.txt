@@ -1,0 +1,53 @@
+RELATÓRIO DE DEPURAÇÃO — SEÇÕES RECOLHIDAS ADMIN
+==========================================================
+
+DEPURAÇÃO 1 — HTML / IDS / SINTAXE
+[OK] Números que faltam existe como details
+[OK] Números que faltam sem atributo open
+[OK] Mapa dos 200 existe como details
+[OK] Mapa dos 200 sem atributo open
+[OK] Pedidos e pagamentos não está dentro de details
+[OK] ID preservado: availableHeadline
+[OK] ID preservado: availableNumbersList
+[OK] ID preservado: adminNumberGrid
+[OK] ID preservado: buyerSearch
+[OK] ID preservado: buyerFilter
+[OK] ID preservado: buyerTableBody
+[OK] ID preservado: buyerCards
+[OK] Sintaxe válida: admin.js
+[OK] Sintaxe válida: app.js
+[OK] Sintaxe válida: config.js
+[OK] Sintaxe válida: admin-sw.js
+
+DEPURAÇÃO 2 — COMPARAÇÃO BYTE A BYTE
+Arquivos comprovadamente NÃO alterados:
+[OK] index.html
+[OK] js/admin.js
+[OK] js/app.js
+[OK] js/config.js
+[OK] css/styles.css
+[OK] admin.webmanifest
+[OK] supabase/functions/infinitepay-gateway/index.ts
+[OK] supabase/ATUALIZAR_ADMIN_WHATSAPP_CONFIRMACAO.sql
+
+Arquivos alterados somente para o recolhimento visual:
+[OK] admin.html
+[OK] css/admin.css
+[OK] admin-sw.js (somente cache PWA)
+
+DEPURAÇÃO 3 — COMPORTAMENTO / ISOLAMENTO
+[OK] Só existem 2 seções admin-collapsible
+[OK] Disponíveis possui summary clicável
+[OK] Mapa possui summary clicável
+[OK] CSS possui regra para estado aberto
+[OK] CSS possui cursor de clique
+[OK] Admin JS não força abertura das seções
+[OK] Pedidos e pagamentos segue como section normal
+[OK] Cache PWA atualizado
+
+RESULTADO FINAL
+As 3 depurações passaram.
+Números que faltam: recolhido por padrão.
+Mapa dos 200 números: recolhido por padrão.
+Pedidos e pagamentos: aberto por padrão.
+Página pública, banco, pagamentos, WhatsApp e Edge Function não foram alterados.

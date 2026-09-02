@@ -118,16 +118,135 @@
     const nums = (r.numbers || []).map(pad).join(", ");
     return `<strong>${escapeHtml(r.buyer_name || "")}</strong><br>Números: <strong>${escapeHtml(nums)}</strong><br>Valor: <strong>${escapeHtml(money(r.expected_amount_cents))}</strong>`;
   }
-  function confirmAction({ title="Confirmar ação", message="", details="", confirmText="Confirmar", icon="?", danger=false } = {}) {
+
+  function whatsappTarget(phone) {
+    const d = String(phone || "").replace(/\D/g, "");
+    if (!d) return "";
+    if (d.startsWith("55") && (d.length === 12 || d.length === 13)) return d;
+    if (d.length === 10 || d.length === 11) return `55${d}`;
+    return d;
+  }
+
+  function confirmationMessage(r) {
+    const name = String(r?.buyer_name || "").trim();
+    const numbers = (r?.numbers || []).map(pad).join(", ");
+    return [
+      `Olá${name ? `, ${name}` : ""}! ✅`,
+      "",
+      "Seu pagamento da Rifa Beneficente foi confirmado.",
+      `🎟️ Seus números: ${numbers}`,
+      "",
+      "🍀 Boa sorte!",
+      "Muito obrigado pela participação. Que Deus abençoe! 🙏"
+    ].join("\n");
+  }
+
+  function whatsappPhoneHtml(r) {
+    const phone = escapeHtml(formatPhone(r.whatsapp));
+    if (r.payment_status !== "paid") {
+      return `<span class="admin-phone admin-phone--plain">${phone}</span>`;
+    }
+
+    const sent = Boolean(r.confirmation_whatsapp_sent_at);
+    const title = sent
+      ? `Mensagem de confirmação já enviada em ${escapeHtml(formatDate(r.confirmation_whatsapp_sent_at))}`
+      : "Clique para enviar a confirmação pelo WhatsApp";
+
+    return `
+      <button
+        type="button"
+        class="admin-phone admin-phone--whatsapp ${sent ? "admin-phone--sent" : ""}"
+        data-whatsapp-confirmation="${escapeHtml(r.id)}"
+        title="${title}">
+        ${phone}${sent ? ' <span aria-hidden="true">✓</span>' : ""}
+      </button>
+    `;
+  }
+
+  async function handleConfirmationWhatsapp(r) {
+    if (!r) return;
+
+    if (r.payment_status !== "paid") {
+      showToast("Confirme o pagamento antes de enviar a mensagem.", "error");
+      return;
+    }
+
+    if (r.confirmation_whatsapp_sent_at) {
+      await confirmAction({
+        title: "Mensagem já enviada",
+        message: `A confirmação para ${r.buyer_name || "este comprador"} já foi enviada em ${formatDate(r.confirmation_whatsapp_sent_at)}.`,
+        details: reservationDetails(r),
+        confirmText: "OK",
+        icon: "✓",
+        single: true
+      });
+      return;
+    }
+
+    const ok = await confirmAction({
+      title: "Enviar confirmação pelo WhatsApp?",
+      message: "Ao confirmar, o WhatsApp será aberto com a mensagem pronta. Esta confirmação só poderá ser usada uma vez para este pedido.",
+      details: `${reservationDetails(r)}<br>WhatsApp: <strong>${escapeHtml(formatPhone(r.whatsapp))}</strong>`,
+      confirmText: "Sim, abrir WhatsApp",
+      icon: "💬"
+    });
+
+    if (!ok) return;
+
+    try {
+      const result = await rpc("admin_mark_confirmation_whatsapp_sent", {
+        p_reservation_id: r.id
+      });
+
+      if (result?.already_sent) {
+        await refreshDashboard();
+        await confirmAction({
+          title: "Mensagem já enviada",
+          message: `Esta confirmação já tinha sido registrada em ${formatDate(result.sent_at)}.`,
+          details: reservationDetails(r),
+          confirmText: "OK",
+          icon: "✓",
+          single: true
+        });
+        return;
+      }
+
+      const messageData = {
+        ...r,
+        buyer_name: result?.buyer_name || r.buyer_name,
+        whatsapp: result?.whatsapp || r.whatsapp,
+        numbers: result?.numbers || r.numbers
+      };
+
+      const target = whatsappTarget(messageData.whatsapp);
+      if (!target) throw new Error("WhatsApp do comprador inválido.");
+
+      const url = `https://wa.me/${target}?text=${encodeURIComponent(confirmationMessage(messageData))}`;
+
+      await refreshDashboard();
+
+      const opened = window.open(url, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        window.location.href = url;
+      }
+
+      showToast("Confirmação registrada. WhatsApp aberto.", "success");
+    } catch (error) {
+      showToast(error.message || "Não foi possível abrir a confirmação no WhatsApp.", "error");
+    }
+  }
+  function confirmAction({ title="Confirmar ação", message="", details="", confirmText="Confirmar", icon="?", danger=false, single=false } = {}) {
     return new Promise(resolve => {
       state.confirmResolver=resolve; el.confirmIcon.textContent=icon; el.confirmTitle.textContent=title; el.confirmMessage.textContent=message;
       el.confirmOk.textContent=confirmText; el.confirmOk.classList.toggle("button--danger",danger); el.confirmOk.classList.toggle("button--primary",!danger);
+      el.confirmCancel.classList.toggle("hidden", Boolean(single));
       if(details){ el.confirmDetails.innerHTML=details; el.confirmDetails.classList.remove("hidden"); } else { el.confirmDetails.innerHTML=""; el.confirmDetails.classList.add("hidden"); }
-      el.confirmModal.classList.remove("hidden"); el.confirmModal.setAttribute("aria-hidden","false"); setTimeout(()=>el.confirmCancel.focus(),20);
+      el.confirmModal.classList.remove("hidden"); el.confirmModal.setAttribute("aria-hidden","false"); setTimeout(() => (single ? el.confirmOk : el.confirmCancel).focus(),20);
     });
   }
   function closeConfirmModal(result) {
     el.confirmModal.classList.add("hidden"); el.confirmModal.setAttribute("aria-hidden","true");
+    el.confirmCancel.classList.remove("hidden");
     const resolver=state.confirmResolver; state.confirmResolver=null; if(resolver) resolver(Boolean(result));
   }
   async function restoreSession() {
@@ -263,7 +382,7 @@
     el.tbody.innerHTML = rows.map(r => `
       <tr>
         <td><strong>${escapeHtml(r.buyer_name)}</strong></td>
-        <td>${escapeHtml(formatPhone(r.whatsapp))}</td>
+        <td>${whatsappPhoneHtml(r)}</td>
         <td><div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div></td>
         <td><strong>${money(r.expected_amount_cents)}</strong></td>
         <td>${statusBadge(r.payment_status, r.payment_provider)}</td>
@@ -276,7 +395,7 @@
     el.cards.innerHTML = rows.map(r => `
       <article class="buyer-card">
         <div class="buyer-card__head">
-          <div><strong>${escapeHtml(r.buyer_name)}</strong><small>${escapeHtml(formatPhone(r.whatsapp))}</small></div>
+          <div><strong>${escapeHtml(r.buyer_name)}</strong><small>${whatsappPhoneHtml(r)}</small></div>
           ${statusBadge(r.payment_status, r.payment_provider)}
         </div>
         <div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div>
@@ -290,6 +409,13 @@
   }
 
   function bindRowActions() {
+    document.querySelectorAll("[data-whatsapp-confirmation]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const r = reservationById(btn.dataset.whatsappConfirmation);
+        await handleConfirmationWhatsapp(r);
+      });
+    });
+
     document.querySelectorAll("[data-payment]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.dataset.payment;
