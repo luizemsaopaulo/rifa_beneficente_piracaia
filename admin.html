@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="assets/admin-icon-192.png">
   <title>Painel Admin • Rifa Beneficente</title>
   <link rel="stylesheet" href="css/styles.css?v=20260901-2">
-  <link rel="stylesheet" href="css/admin.css?v=20260902-6">
+  <link rel="stylesheet" href="css/admin.css?v=20260902-8">
 </head>
 <body class="admin-body">
   <header class="admin-topbar">
@@ -61,11 +61,31 @@
         </div>
       </section>
 
-      <section class="admin-stats-grid">
+      <section class="admin-stats-grid admin-stats-grid--funds">
         <div class="admin-stat"><span>Disponíveis</span><strong id="adminAvailable">0</strong><small>Números que faltam vender</small></div>
-        <div class="admin-stat"><span>Em pagamento</span><strong id="adminPending">0</strong><small>Checkout iniciado</small></div>
-        <div class="admin-stat"><span>Valor arrecadado</span><strong id="adminPaid">R$ 0,00</strong><small>Pagamentos confirmados</small></div>
+        <div class="admin-stat"><span>Em pagamento</span><strong id="adminPending">0</strong><small>Pedidos pendentes</small></div>
+        <div class="admin-stat"><span>Arrecadado com a rifa</span><strong id="adminPaid">R$ 0,00</strong><small>Pagamentos confirmados</small></div>
+        <div class="admin-stat"><span>Doações</span><strong id="adminDonationTotal">R$ 0,00</strong><small>Sem compra de número</small></div>
+        <div class="admin-stat admin-stat--grand"><span>Total arrecadado</span><strong id="adminGrandTotal">R$ 0,00</strong><small>Rifa + doações</small></div>
         <div class="admin-stat"><span>Compradores</span><strong id="adminBuyers">0</strong><small>Pedidos cadastrados</small></div>
+      </section>
+
+      <section class="card donation-card">
+        <div class="section-head donation-head">
+          <div>
+            <span class="kicker">DOAÇÕES SEM NÚMERO</span>
+            <h2>Registrar doação recebida</h2>
+            <p>Use este campo quando alguém doar sem comprar número da rifa.</p>
+          </div>
+        </div>
+        <form id="donationForm" class="donation-form">
+          <label>
+            Valor da doação
+            <input id="donationAmountInput" inputmode="decimal" autocomplete="off" placeholder="Ex.: 50,00" required>
+          </label>
+          <button id="addDonationBtn" class="button button--success" type="submit">+ Registrar doação</button>
+        </form>
+        <div id="donationList" class="donation-list"></div>
       </section>
 
       <section class="card sales-control">
@@ -224,6 +244,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=20260901-2"></script>
-  <script src="js/admin.js?v=20260902-6"></script>
+  <script src="js/admin.js?v=20260902-9"></script>
 </body>
 </html>

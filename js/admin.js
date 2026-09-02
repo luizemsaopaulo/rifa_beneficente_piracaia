@@ -29,7 +29,12 @@
     available: $("adminAvailable"),
     pending: $("adminPending"),
     paid: $("adminPaid"),
+    donationTotal: $("adminDonationTotal"),
+    grandTotal: $("adminGrandTotal"),
     buyers: $("adminBuyers"),
+    donationForm: $("donationForm"),
+    donationAmount: $("donationAmountInput"),
+    donationList: $("donationList"),
     salesTitle: $("salesStatusTitle"),
     salesText: $("salesStatusText"),
     toggleSales: $("toggleSalesBtn"),
@@ -80,11 +85,70 @@
     showToast.timer = setTimeout(() => el.toast.classList.remove("toast--show"), 3300);
   }
 
+
+  const BRAZIL_DDDS = new Set([
+    "11","12","13","14","15","16","17","18","19",
+    "21","22","24","27","28",
+    "31","32","33","34","35","37","38",
+    "41","42","43","44","45","46","47","48","49",
+    "51","53","54","55",
+    "61","62","63","64","65","66","67","68","69",
+    "71","73","74","75","77","79",
+    "81","82","83","84","85","86","87","88","89",
+    "91","92","93","94","95","96","97","98","99"
+  ]);
+
+  function normalizeBrazilWhatsapp(phone) {
+    let d = String(phone || "").replace(/\D/g, "");
+    if (!d) return { ok: false, error: "WhatsApp vazio." };
+
+    if (d.startsWith("00")) d = d.slice(2);
+
+    if (d.startsWith("5555") && (d.length === 14 || d.length === 15)) {
+      d = d.slice(2);
+    }
+
+    if (d.startsWith("55") && (d.length === 12 || d.length === 13)) {
+      d = d.slice(2);
+    }
+
+    if (d.length !== 10 && d.length !== 11) {
+      return {
+        ok: false,
+        error: "Telefone inválido. Confira o DDD e o número do comprador."
+      };
+    }
+
+    const ddd = d.slice(0, 2);
+    const subscriber = d.slice(2);
+
+    if (!BRAZIL_DDDS.has(ddd)) {
+      return { ok: false, error: `DDD ${ddd} inválido.` };
+    }
+
+    if (d.length === 11 && subscriber[0] !== "9") {
+      return {
+        ok: false,
+        error: "Celular inválido: depois do DDD, o número deve começar com 9."
+      };
+    }
+
+    if (d.length === 10 && !/^[2-9]/.test(subscriber)) {
+      return { ok: false, error: "Telefone fixo inválido." };
+    }
+
+    return {
+      ok: true,
+      national: d,
+      e164: `55${d}`
+    };
+  }
   function formatPhone(phone) {
-    const d = String(phone || "").replace(/\D/g, "");
+    const check = normalizeBrazilWhatsapp(phone);
+    if (!check.ok) return phone || "";
+    const d = check.national;
     if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
-    if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
-    return phone || "";
+    return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
   }
 
   function formatDate(value) {
@@ -96,9 +160,23 @@
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format((Number(cents) || 0) / 100);
   }
 
+  function parseMoneyToCents(value) {
+    let raw = String(value || "").trim().replace(/^R\$\s*/i, "").replace(/\s/g, "");
+    if (!raw) return 0;
+    if (raw.includes(",")) raw = raw.replace(/\./g, "").replace(",", ".");
+    const amount = Number(raw);
+    if (!Number.isFinite(amount) || amount <= 0) return 0;
+    return Math.round(amount * 100);
+  }
+
   function paymentInfo(r) {
     if (r.payment_provider === "personal_pix") {
       return '<div><strong>Pix pessoal</strong><br><small>Confirmação manual</small></div>';
+    }
+    if (r.payment_provider === "cash") {
+      const receiver = escapeHtml(r.cash_received_by || "—");
+      const receiverPhone = escapeHtml(formatPhone(r.cash_received_phone || ""));
+      return `<div><strong>Dinheiro</strong><div class="cash-admin-detail">Recebeu: ${receiver}${receiverPhone ? `<br>${receiverPhone}` : ""}</div></div>`;
     }
     const method = r.capture_method === "pix" ? "Pix" : (r.capture_method ? r.capture_method : "Checkout");
     const receipt = r.receipt_url
@@ -125,11 +203,8 @@
   }
 
   function whatsappTarget(phone) {
-    const d = String(phone || "").replace(/\D/g, "");
-    if (!d) return "";
-    if (d.startsWith("55") && (d.length === 12 || d.length === 13)) return d;
-    if (d.length === 10 || d.length === 11) return `55${d}`;
-    return d;
+    const check = normalizeBrazilWhatsapp(phone);
+    return check.ok ? check.e164 : "";
   }
 
   function confirmationMessage(r) {
@@ -176,6 +251,19 @@
       return;
     }
 
+    const phoneCheck = normalizeBrazilWhatsapp(r.whatsapp);
+    if (!phoneCheck.ok) {
+      await confirmAction({
+        title: "WhatsApp inválido",
+        message: phoneCheck.error || "O telefone do comprador não está em um formato válido.",
+        details: `${reservationDetails(r)}<br>Telefone cadastrado: <strong>${escapeHtml(String(r.whatsapp || "—"))}</strong>`,
+        confirmText: "OK",
+        icon: "!",
+        single: true
+      });
+      return;
+    }
+
     if (r.confirmation_whatsapp_sent_at) {
       await confirmAction({
         title: "Mensagem já enviada",
@@ -199,6 +287,9 @@
     if (!ok) return;
 
     try {
+      const target = phoneCheck.e164;
+      if (!target) throw new Error("WhatsApp do comprador inválido.");
+
       const result = await rpc("admin_mark_confirmation_whatsapp_sent", {
         p_reservation_id: r.id
       });
@@ -222,9 +313,6 @@
         whatsapp: result?.whatsapp || r.whatsapp,
         numbers: result?.numbers || r.numbers
       };
-
-      const target = whatsappTarget(messageData.whatsapp);
-      if (!target) throw new Error("WhatsApp do comprador inválido.");
 
       const url = `https://wa.me/${target}?text=${encodeURIComponent(confirmationMessage(messageData))}`;
 
@@ -363,14 +451,78 @@
     const totalRaisedCents = (data.reservations || [])
       .filter(r => r.payment_status === "paid")
       .reduce((total, r) => total + Number(r.expected_amount_cents || 0), 0);
+    const donationTotalCents = Number(stats.donation_total_cents || 0);
     el.paid.textContent = money(totalRaisedCents);
+    el.donationTotal.textContent = money(donationTotalCents);
+    el.grandTotal.textContent = money(totalRaisedCents + donationTotalCents);
     el.buyers.textContent = stats.buyers ?? 0;
 
+    renderDonations(data.donations || []);
     renderSales(data.state || {});
     renderAvailable(data.numbers || []);
     renderNumberGrid(data.numbers || []);
     renderBuyers();
     renderWinner(data.state || {});
+  }
+
+  function renderDonations(donations) {
+    if (!donations.length) {
+      el.donationList.innerHTML = '<p class="donation-empty">Nenhuma doação sem número registrada.</p>';
+      return;
+    }
+
+    el.donationList.innerHTML = donations.map(d => `
+      <div class="donation-row">
+        <div>
+          <strong>${money(d.amount_cents)}</strong>
+          <small>${escapeHtml(formatDate(d.created_at))}</small>
+        </div>
+        <button class="mini-button mini-button--danger" type="button" data-delete-donation="${escapeHtml(d.id)}">Excluir</button>
+      </div>
+    `).join("");
+
+    document.querySelectorAll("[data-delete-donation]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const donation = donations.find(d => String(d.id) === String(btn.dataset.deleteDonation));
+        if (!donation) return;
+        const ok = await confirmAction({
+          title: "Excluir esta doação?",
+          message: "Use esta opção somente se a doação foi lançada por engano.",
+          details: `Valor: <strong>${escapeHtml(money(donation.amount_cents))}</strong><br>Registrada em: ${escapeHtml(formatDate(donation.created_at))}`,
+          confirmText: "Sim, excluir doação",
+          icon: "!",
+          danger: true
+        });
+        if (!ok) return;
+        try {
+          await rpc("admin_delete_donation", { p_donation_id: donation.id });
+          await refreshDashboard();
+          showToast("Doação excluída.", "success");
+        } catch (error) { showToast(error.message, "error"); }
+      });
+    });
+  }
+
+  async function addDonation(event) {
+    event.preventDefault();
+    const amountCents = parseMoneyToCents(el.donationAmount.value);
+    if (amountCents <= 0) return showToast("Digite um valor de doação válido.", "error");
+
+    const ok = await confirmAction({
+      title: "Registrar doação?",
+      message: "Esta doação será somada ao Total arrecadado, sem ocupar nenhum número da rifa.",
+      details: `Valor da doação: <strong>${escapeHtml(money(amountCents))}</strong>`,
+      confirmText: "Sim, registrar doação",
+      icon: "❤"
+    });
+    if (!ok) return;
+
+    try {
+      await rpc("admin_add_donation", { p_amount_cents: amountCents });
+      el.donationAmount.value = "";
+      await refreshDashboard();
+      showToast(`Doação de ${money(amountCents)} registrada.`, "success");
+    } catch (error) { showToast(error.message, "error"); }
   }
 
   function renderSales(s) {
@@ -419,6 +571,8 @@
         r.whatsapp,
         r.order_nsu,
         r.transaction_nsu,
+        r.cash_received_by,
+        r.cash_received_phone,
         ...(r.numbers || []).map(pad),
         ...(r.numbers || []).map(String)
       ].join(" ").toLowerCase();
@@ -429,15 +583,17 @@
   function statusBadge(status, provider = "") {
     if (status === "paid") return '<span class="payment-badge payment-badge--paid">Pago</span>';
     if (status === "expired") return '<span class="payment-badge payment-badge--expired">Expirado</span>';
-    if (provider === "personal_pix") return '<span class="payment-badge payment-badge--pending">Pendente</span>';
+    if (provider === "personal_pix" || provider === "cash") return '<span class="payment-badge payment-badge--pending">Pendente</span>';
     return '<span class="payment-badge payment-badge--pending">Em pagamento</span>';
   }
 
   function actionsHtml(r) {
     const paid = r.payment_status === "paid";
     const personalPix = r.payment_provider === "personal_pix";
+    const cash = r.payment_provider === "cash";
+    const manual = personalPix || cash;
 
-    if (personalPix && !paid) {
+    if (manual && !paid) {
       return `
         <div class="row-actions">
           <button class="mini-button mini-button--success" data-payment="${r.id}" data-paid="true">Confirmar pagamento</button>
@@ -448,7 +604,7 @@
     return `
       <div class="row-actions">
         <button class="mini-button ${paid ? "mini-button--soft" : "mini-button--success"}" data-payment="${r.id}" data-paid="${paid ? "false" : "true"}">
-          ${paid ? (personalPix ? "Voltar p/ pendente" : "Voltar p/ em pagamento") : "Confirmar pagamento"}
+          ${paid ? (manual ? "Voltar p/ pendente" : "Voltar p/ em pagamento") : "Confirmar pagamento"}
         </button>
         <button class="mini-button mini-button--danger" data-cancel="${r.id}">Cancelar</button>
       </div>`;
@@ -483,7 +639,8 @@
           ${statusBadge(r.payment_status, r.payment_provider)}
         </div>
         <div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div>
-        <p><strong>${money(r.expected_amount_cents)}</strong> • ${r.payment_provider === "personal_pix" ? "Pix pessoal" : "InfinitePay"}</p>
+        <p><strong>${money(r.expected_amount_cents)}</strong> • ${r.payment_provider === "personal_pix" ? "Pix pessoal" : (r.payment_provider === "cash" ? "Dinheiro" : "InfinitePay")}</p>
+        ${r.payment_provider === "cash" ? `<div class="cash-admin-detail"><strong>Entregue a:</strong> ${escapeHtml(r.cash_received_by || "—")}${r.cash_received_phone ? `<br>${escapeHtml(formatPhone(r.cash_received_phone))}` : ""}</div>` : ""}
         <small>Compra iniciada em ${escapeHtml(formatDate(r.created_at))}</small>
         ${actionsHtml(r)}
       </article>
@@ -506,13 +663,15 @@
         const paid = btn.dataset.paid === "true";
         const r = reservationById(id);
         const personalPix = r?.payment_provider === "personal_pix";
+        const cash = r?.payment_provider === "cash";
+        const manual = personalPix || cash;
         const ok = await confirmAction({
-          title: paid ? "Confirmar pagamento?" : (personalPix ? "Voltar para pendente?" : "Desmarcar pagamento?"),
+          title: paid ? "Confirmar pagamento?" : (manual ? "Voltar para pendente?" : "Desmarcar pagamento?"),
           message: paid
             ? "Confirme somente se você verificou que o pagamento realmente foi recebido."
-            : (personalPix ? "Os números voltarão a ficar Pendentes e continuarão bloqueados até uma nova decisão sua." : "O pedido voltará para o status Em pagamento."),
+            : (manual ? "Os números voltarão a ficar Pendentes e continuarão bloqueados até uma nova decisão sua." : "O pedido voltará para o status Em pagamento."),
           details: reservationDetails(r),
-          confirmText: paid ? "Sim, confirmar pagamento" : (personalPix ? "Sim, voltar para pendente" : "Sim, voltar para em pagamento"),
+          confirmText: paid ? "Sim, confirmar pagamento" : (manual ? "Sim, voltar para pendente" : "Sim, voltar para em pagamento"),
           icon: paid ? "✓" : "↩",
           danger: !paid
         });
@@ -520,7 +679,7 @@
         try {
           await rpc("admin_set_payment", { p_reservation_id: id, p_paid: paid });
           await refreshDashboard();
-          showToast(paid ? "Pagamento confirmado." : (personalPix ? "Pedido voltou para Pendente." : "Pagamento desmarcado."), "success");
+          showToast(paid ? "Pagamento confirmado." : (manual ? "Pedido voltou para Pendente." : "Pagamento desmarcado."), "success");
         } catch (error) { showToast(error.message, "error"); }
       });
     });
@@ -531,6 +690,8 @@
         const r = reservationById(id);
         const notPaid = btn.dataset.notPaid === "true";
         const personalPix = r?.payment_provider === "personal_pix";
+        const cash = r?.payment_provider === "cash";
+        const manual = personalPix || cash;
         const ok = await confirmAction({
           title: notPaid ? "Confirmar que não pagou?" : "Cancelar este pedido?",
           message: notPaid ? "Os números serão liberados imediatamente e poderão ser escolhidos por outra pessoa." : "Os números deste pedido serão liberados.",
@@ -543,7 +704,7 @@
         try {
           await rpc("admin_cancel_reservation", { p_reservation_id: id });
           await refreshDashboard();
-          showToast(personalPix && notPaid ? "Marcado como não pago. Números liberados." : "Pedido cancelado e números liberados.", "success");
+          showToast(manual && notPaid ? "Marcado como não pago. Números liberados." : "Pedido cancelado e números liberados.", "success");
         } catch (error) { showToast(error.message, "error"); }
       });
     });
@@ -637,7 +798,7 @@
     if (!reservations.length) return showToast("Não há dados para exportar.", "error");
 
     const rows = [
-      ["Comprador", "WhatsApp", "Números", "Valor", "Status", "Pedido", "Transação", "Método", "Compra iniciada em", "Pago em", "Comprovante"],
+      ["Comprador", "WhatsApp", "Números", "Valor", "Status", "Pedido", "Transação", "Método", "Recebido por", "Telefone de quem recebeu", "Compra iniciada em", "Pago em", "Comprovante"],
       ...reservations.map(r => [
         r.buyer_name,
         r.whatsapp,
@@ -646,7 +807,9 @@
         r.payment_status === "paid" ? "Pago" : (r.payment_status === "expired" ? "Expirado" : "Em pagamento"),
         r.order_nsu || "",
         r.transaction_nsu || "",
-        r.payment_provider === "personal_pix" ? "Pix pessoal" : (r.capture_method || "InfinitePay"),
+        r.payment_provider === "personal_pix" ? "Pix pessoal" : (r.payment_provider === "cash" ? "Dinheiro" : (r.capture_method || "InfinitePay")),
+        r.cash_received_by || "",
+        r.cash_received_phone || "",
         formatDate(r.created_at),
         formatDate(r.paid_at),
         r.receipt_url || ""
@@ -717,6 +880,7 @@
   el.refresh.addEventListener("click", () => refreshDashboard().catch(e => showToast(e.message, "error")));
   el.logout.addEventListener("click", logout);
   el.toggleSales.addEventListener("click", toggleSales);
+  el.donationForm.addEventListener("submit", addDonation);
   el.search.addEventListener("input", renderBuyers);
   el.filter.addEventListener("change", renderBuyers);
   el.exportCsv.addEventListener("click", exportCsv);

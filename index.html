@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#981b39">
   <meta name="description" content="Rifa beneficente com 200 números para ajudar no reparo do telhado após o temporal em Piracaia-SP. Prêmio de R$ 200 via Pix.">
   <title>Rifa Beneficente • Ajude no telhado</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260901-4">
+  <link rel="stylesheet" href="css/styles.css?v=20260902-8">
 </head>
 <body>
   <header class="hero">
@@ -133,7 +133,7 @@
         <h2>Informações do sorteio</h2>
         <dl>
           <div><dt>Valor</dt><dd>R$ 10 por número</dd></div>
-          <div><dt>Pagamento</dt><dd>InfinitePay ou Pix pessoal</dd></div>
+          <div><dt>Pagamento</dt><dd>InfinitePay, Pix pessoal ou dinheiro</dd></div>
           <div><dt>Prêmio</dt><dd>R$ 200 via Pix</dd></div>
           <div><dt>Data</dt><dd>18/10/2026</dd></div>
           <div><dt>Horário</dt><dd>20h</dd></div>
@@ -253,6 +253,27 @@
               <small>Faça o Pix e depois envie os números pelo WhatsApp para conferência.</small>
             </span>
           </label>
+
+          <label class="payment-method" id="methodCashCard">
+            <input type="radio" name="paymentMethod" value="cash">
+            <span class="payment-method__icon">💵</span>
+            <span>
+              <strong>Dinheiro</strong>
+              <small>Informe para quem você entregou o dinheiro. A confirmação é feita pelo organizador.</small>
+            </span>
+          </label>
+
+          <div id="cashPaymentFields" class="cash-payment-fields hidden">
+            <label>
+              Para quem você pagou?
+              <input id="cashReceivedByInput" maxlength="80" autocomplete="off" placeholder="Nome de quem recebeu">
+            </label>
+            <label>
+              Telefone de quem recebeu
+              <input id="cashReceivedPhoneInput" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="(11) 99999-9999">
+            </label>
+            <p>Os números ficam <strong>Pendentes</strong> até o organizador confirmar que o dinheiro foi recebido.</p>
+          </div>
         </fieldset>
 
         <button id="purchaseButton" class="button button--primary button--large" type="submit">
@@ -286,6 +307,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=20260902-2"></script>
-  <script src="js/app.js?v=20260902-2"></script>
+  <script src="js/app.js?v=20260902-9"></script>
 </body>
 </html>

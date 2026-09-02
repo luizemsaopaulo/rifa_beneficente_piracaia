@@ -54,6 +54,10 @@
     receiptLink: $("receiptLink"),
     methodInfiniteCard: $("methodInfiniteCard"),
     methodPersonalCard: $("methodPersonalCard"),
+    methodCashCard: $("methodCashCard"),
+    cashPaymentFields: $("cashPaymentFields"),
+    cashReceivedBy: $("cashReceivedByInput"),
+    cashReceivedPhone: $("cashReceivedPhoneInput"),
     personalPixPanel: $("personalPixPanel"),
     personalPixKey: $("personalPixKey"),
     personalPixOwner: $("personalPixOwner"),
@@ -65,6 +69,99 @@
 
   function pad(n) { return String(n).padStart(3, "0"); }
   function digits(value) { return String(value || "").replace(/\D/g, ""); }
+
+  const BRAZIL_DDDS = new Set([
+    "11","12","13","14","15","16","17","18","19",
+    "21","22","24","27","28",
+    "31","32","33","34","35","37","38",
+    "41","42","43","44","45","46","47","48","49",
+    "51","53","54","55",
+    "61","62","63","64","65","66","67","68","69",
+    "71","73","74","75","77","79",
+    "81","82","83","84","85","86","87","88","89",
+    "91","92","93","94","95","96","97","98","99"
+  ]);
+
+  function normalizeBrazilPhone(value, { requireMobile = false } = {}) {
+    const raw = String(value || "").trim();
+    let d = digits(raw);
+
+    if (!d) {
+      return { ok: false, error: "Digite o telefone com DDD." };
+    }
+
+    if (d.startsWith("00")) d = d.slice(2);
+
+    // Corrige country code 55 duplicado quando houver comprimento suficiente
+    // para provar que há um +55 extra (ex.: 55 55 11 99999-9999).
+    if (d.startsWith("5555") && (d.length === 14 || d.length === 15)) {
+      d = d.slice(2);
+    }
+
+    // Se vier em E.164 brasileiro, converte para formato nacional.
+    if (d.startsWith("55") && (d.length === 12 || d.length === 13)) {
+      d = d.slice(2);
+    }
+
+    if (d.length !== 10 && d.length !== 11) {
+      return {
+        ok: false,
+        error: "Telefone inválido. Use DDD + número, por exemplo: 11 99999-9999."
+      };
+    }
+
+    const ddd = d.slice(0, 2);
+    const subscriber = d.slice(2);
+
+    if (!BRAZIL_DDDS.has(ddd)) {
+      return { ok: false, error: `DDD ${ddd} inválido.` };
+    }
+
+    if (d.length === 11 && subscriber[0] !== "9") {
+      return {
+        ok: false,
+        error: "Celular inválido: depois do DDD, o número deve começar com 9."
+      };
+    }
+
+    if (d.length === 10 && requireMobile) {
+      return {
+        ok: false,
+        error: "Para WhatsApp de celular, digite DDD + 9 dígitos."
+      };
+    }
+
+    if (d.length === 10 && !/^[2-9]/.test(subscriber)) {
+      return { ok: false, error: "Telefone fixo inválido." };
+    }
+
+    return {
+      ok: true,
+      national: d,
+      e164: `55${d}`,
+      ddd,
+      subscriber
+    };
+  }
+
+  function formatPhoneInput(value) {
+    const raw = String(value || "");
+    let d = digits(raw);
+
+    const explicitCountry = /^\s*\+55\b/.test(raw) || (d.startsWith("55") && d.length > 11);
+    if (explicitCountry && d.startsWith("55")) d = d.slice(2);
+
+    d = d.slice(0, 11);
+
+    if (d.length <= 2) return d;
+    if (d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+
+    if (d.length <= 10) {
+      return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+    }
+
+    return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  }
   function money(cents) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
       .format((Number(cents) || 0) / 100);
@@ -268,13 +365,18 @@
     const method = selectedMethod();
     el.methodInfiniteCard.classList.toggle("payment-method--active", method === "infinitepay");
     el.methodPersonalCard.classList.toggle("payment-method--active", method === "personal_pix");
+    el.methodCashCard.classList.toggle("payment-method--active", method === "cash");
+    el.cashPaymentFields.classList.toggle("hidden", method !== "cash");
 
     if (method === "infinitepay") {
       el.paymentHelp.innerHTML =
         'Cada número custa <strong>R$ 10,00</strong>. Pela InfinitePay, o pagamento é identificado automaticamente.';
-    } else {
+    } else if (method === "personal_pix") {
       el.paymentHelp.innerHTML =
         'Cada número custa <strong>R$ 10,00</strong>. No Pix pessoal, depois do pagamento toque em <strong>enviar meus números no WhatsApp</strong>.';
+    } else {
+      el.paymentHelp.innerHTML =
+        'Cada número custa <strong>R$ 10,00</strong>. Em dinheiro, informe <strong>quem recebeu</strong> e o telefone dessa pessoa. O pagamento ficará pendente até conferência do organizador.';
     }
     renderSalesState();
   }
@@ -295,6 +397,7 @@
     el.purchaseButton.disabled = blocked || count === 0;
     if (blocked) el.purchaseButton.textContent = "Vendas encerradas";
     else if (method === "personal_pix") el.purchaseButton.textContent = `Continuar para Pix • ${total}`;
+    else if (method === "cash") el.purchaseButton.textContent = `Registrar em dinheiro • ${total}`;
     else el.purchaseButton.textContent = `Ir para InfinitePay • ${total}`;
   }
 
@@ -396,6 +499,17 @@
     });
   }
 
+  async function startCashPayment(name, phone, numbers, receivedBy, receivedPhone) {
+    return callGateway({
+      action: "create_cash_payment",
+      name,
+      whatsapp: phone,
+      numbers,
+      cash_received_by: receivedBy,
+      cash_received_phone: receivedPhone
+    });
+  }
+
   async function checkPaymentStatus(orderNsu, quiet = false) {
     const { data, error } = await db.rpc("payment_status", { p_order_nsu: orderNsu });
     if (error) {
@@ -476,6 +590,12 @@
 
     if (pending.provider === "personal_pix") {
       showPersonalPixPanel(pending);
+    } else if (pending.provider === "cash") {
+      showPaymentCard(
+        "warning",
+        "Pagamento em dinheiro pendente",
+        `Seus números ${(pending.numbers || []).map(pad).join(", ")} estão aguardando a confirmação do organizador.`
+      );
     } else if (pending.checkout_url) {
       showPaymentCard(
         "warning",
@@ -601,14 +721,24 @@
     if (!state.ready) return;
 
     const name = el.name.value.trim();
-    const phone = digits(el.phone.value);
+    const phoneCheck = normalizeBrazilPhone(el.phone.value, { requireMobile: true });
+    const phone = phoneCheck.ok ? phoneCheck.national : "";
     const numbers = [...state.selected].sort((a, b) => a - b);
     const method = selectedMethod();
+    const cashReceivedBy = el.cashReceivedBy.value.trim();
+    const cashPhoneCheck = normalizeBrazilPhone(el.cashReceivedPhone.value, { requireMobile: false });
+    const cashReceivedPhone = cashPhoneCheck.ok ? cashPhoneCheck.national : "";
 
     if (!numbers.length) return showToast("Escolha pelo menos um número.", "error");
     if (name.length < 2) return showToast("Digite um nome válido.", "error");
-    if (phone.length < 10 || phone.length > 15) {
-      return showToast("Digite um WhatsApp válido com DDD.", "error");
+    if (!phoneCheck.ok) {
+      return showToast(phoneCheck.error || "Digite um WhatsApp válido com DDD.", "error");
+    }
+    if (method === "cash") {
+      if (cashReceivedBy.length < 2) return showToast("Informe para quem o dinheiro foi entregue.", "error");
+      if (!cashPhoneCheck.ok) {
+        return showToast(cashPhoneCheck.error || "Digite o telefone de quem recebeu o dinheiro.", "error");
+      }
     }
 
     el.purchaseButton.disabled = true;
@@ -634,6 +764,31 @@
         renderAll();
         showPersonalPixPanel(pending);
         showToast("Pagamento Pix preparado. Faça o Pix e envie seus números pelo WhatsApp.", "success");
+      } else if (method === "cash") {
+        const data = await startCashPayment(name, phone, numbers, cashReceivedBy, cashReceivedPhone);
+        if (!data?.order_nsu) throw new Error("Não foi possível registrar o pagamento em dinheiro.");
+
+        const pending = {
+          provider: "cash",
+          order_nsu: data.order_nsu,
+          buyer_name: name,
+          numbers: data.numbers || numbers,
+          amount_cents: data.amount_cents || numbers.length * cfg.unitPriceCents,
+          cash_received_by: data.cash_received_by || cashReceivedBy,
+          cash_received_phone: data.cash_received_phone || cashReceivedPhone
+        };
+
+        savePending(pending);
+        state.selected.clear();
+        closeCheckoutSilently();
+        el.form.reset();
+        renderAll();
+        showPaymentCard(
+          "warning",
+          "Pagamento em dinheiro registrado",
+          `Seus números ${pending.numbers.map(pad).join(", ")} estão Pendentes até o organizador confirmar o recebimento.`
+        );
+        showToast("Pagamento em dinheiro registrado para conferência.", "success");
       } else {
         const data = await startInfinitePay(name, phone, numbers);
         if (!data?.url || !data?.order_nsu) {
@@ -663,10 +818,11 @@
   });
 
   el.phone.addEventListener("input", () => {
-    const d = digits(el.phone.value).slice(0, 11);
-    if (d.length <= 2) el.phone.value = d;
-    else if (d.length <= 7) el.phone.value = `(${d.slice(0,2)}) ${d.slice(2)}`;
-    else el.phone.value = `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+    el.phone.value = formatPhoneInput(el.phone.value);
+  });
+
+  el.cashReceivedPhone.addEventListener("input", () => {
+    el.cashReceivedPhone.value = formatPhoneInput(el.cashReceivedPhone.value);
   });
 
   function updateCountdown() {

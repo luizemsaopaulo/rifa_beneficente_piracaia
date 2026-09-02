@@ -498,3 +498,26 @@ body.modal-open { overflow: hidden; }
   }
   .cancel-choice-actions { grid-template-columns: 1fr; }
 }
+
+
+/* ===== PAGAMENTO EM DINHEIRO ===== */
+.cash-payment-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #d9e6dc;
+  border-radius: 15px;
+  background: #f8fcf9;
+}
+.cash-payment-fields.hidden { display: none !important; }
+.cash-payment-fields p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+@media (max-width: 620px) {
+  .cash-payment-fields { grid-template-columns: 1fr; }
+}

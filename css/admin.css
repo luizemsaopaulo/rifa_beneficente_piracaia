@@ -75,7 +75,23 @@
 }
 
 .payment-badge--expired { background: #f3f4f6; color: #6b7280; }
-\n\n/* ===== PWA ADMIN + CONFIRMAÇÕES SEGURAS ===== */\n.admin-topbar__actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; justify-content:flex-end; }\n.button--install { border:1px solid #86efac; background:#dcfce7; color:#166534; font-weight:800; }\n.admin-confirm-modal { position:fixed; inset:0; z-index:900; display:grid; place-items:center; padding:16px; }\n.admin-confirm-modal__backdrop { position:absolute; inset:0; background:rgba(20,15,18,.68); backdrop-filter:blur(4px); }\n.admin-confirm-modal__dialog { position:relative; z-index:1; width:min(470px,100%); padding:24px; border-radius:20px; background:#fff; border:1px solid #eadce0; box-shadow:0 28px 80px rgba(0,0,0,.28); text-align:center; }\n.admin-confirm-modal__icon { display:grid; place-items:center; width:58px; height:58px; margin:0 auto 12px; border-radius:50%; background:#fff1f2; color:#b5153f; font-size:1.45rem; font-weight:900; }\n.admin-confirm-modal__dialog h2 { margin:0 0 8px; }\n.admin-confirm-modal__dialog p { margin:0; color:#75636a; line-height:1.55; }\n.admin-confirm-modal__details { margin-top:14px; padding:12px; border-radius:12px; background:#faf5f6; border:1px solid #eadce0; text-align:left; font-size:.88rem; line-height:1.55; }\n.admin-confirm-modal__actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:18px; }\n.mini-button--reactivate { background:#e0f2fe; color:#075985; }\n.expired-help { display:block; margin-top:4px; color:#6b7280; font-size:.72rem; }\n@media(max-width:560px){ .admin-topbar__actions{width:100%;justify-content:stretch}.admin-topbar__actions .button{flex:1}.admin-confirm-modal__actions{grid-template-columns:1fr} }\n
+
+
+/* ===== PWA ADMIN + CONFIRMAÇÕES SEGURAS ===== */
+.admin-topbar__actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; justify-content:flex-end; }
+.button--install { border:1px solid #86efac; background:#dcfce7; color:#166534; font-weight:800; }
+.admin-confirm-modal { position:fixed; inset:0; z-index:900; display:grid; place-items:center; padding:16px; }
+.admin-confirm-modal__backdrop { position:absolute; inset:0; background:rgba(20,15,18,.68); backdrop-filter:blur(4px); }
+.admin-confirm-modal__dialog { position:relative; z-index:1; width:min(470px,100%); padding:24px; border-radius:20px; background:#fff; border:1px solid #eadce0; box-shadow:0 28px 80px rgba(0,0,0,.28); text-align:center; }
+.admin-confirm-modal__icon { display:grid; place-items:center; width:58px; height:58px; margin:0 auto 12px; border-radius:50%; background:#fff1f2; color:#b5153f; font-size:1.45rem; font-weight:900; }
+.admin-confirm-modal__dialog h2 { margin:0 0 8px; }
+.admin-confirm-modal__dialog p { margin:0; color:#75636a; line-height:1.55; }
+.admin-confirm-modal__details { margin-top:14px; padding:12px; border-radius:12px; background:#faf5f6; border:1px solid #eadce0; text-align:left; font-size:.88rem; line-height:1.55; }
+.admin-confirm-modal__actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:18px; }
+.mini-button--reactivate { background:#e0f2fe; color:#075985; }
+.expired-help { display:block; margin-top:4px; color:#6b7280; font-size:.72rem; }
+@media(max-width:560px){ .admin-topbar__actions{width:100%;justify-content:stretch}.admin-topbar__actions .button{flex:1}.admin-confirm-modal__actions{grid-template-columns:1fr} }
+
 
 /* ===== WHATSAPP DE CONFIRMACAO DO PAGAMENTO ===== */
 .admin-phone {
@@ -286,3 +302,36 @@ body.admin-modal-open {
 .admin-confirm-modal__pin-error.hidden {
   display: none !important;
 }
+
+
+/* ===== DOACOES / TOTAIS ===== */
+.admin-stats-grid--funds { grid-template-columns: repeat(3, 1fr); }
+.admin-stat--grand {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+.admin-stat--grand strong { color: #166534; }
+.donation-head p { margin: 4px 0 0; color: var(--muted); }
+.donation-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 320px) auto;
+  gap: 10px;
+  align-items: end;
+}
+.donation-list { margin-top: 14px; display: grid; gap: 7px; }
+.donation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #ece4e7;
+  border-radius: 12px;
+  background: #fbfafb;
+}
+.donation-row strong, .donation-row small { display: block; }
+.donation-row small { color: var(--muted); margin-top: 2px; }
+.donation-empty { color: var(--muted); margin: 0; }
+.cash-admin-detail { margin-top: 4px; color: var(--muted); font-size: .75rem; line-height: 1.45; }
+@media (max-width: 900px) { .admin-stats-grid--funds { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .donation-form { grid-template-columns: 1fr; } }

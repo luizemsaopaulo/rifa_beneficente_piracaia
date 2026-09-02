@@ -1,0 +1,11 @@
+CORREÇÃO APÓS TESTE REAL NO CHROMIUM
+
+Foi encontrado um erro visual no CSS do pop-up: um bloco antigo do admin.css
+continha 16 sequências \n literais em vez de quebras de linha reais.
+Isso fazia o Chromium ignorar parte dos estilos do modal (fundo branco, backdrop,
+espaçamento e outras regras).
+
+Correção:
+- convertidas as sequências \n literais para quebras de linha CSS reais;
+- cache do PWA atualizado para v7;
+- nenhuma regra de banco, pagamento, WhatsApp ou página pública foi alterada.

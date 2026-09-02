@@ -1,0 +1,55 @@
+RELATÓRIO DE DEPURAÇÃO REAL NO CHROMIUM — POP-UP ADMIN
+==================================================================
+
+O teste foi feito com um comprador FICTÍCIO chamado Tamires para não alterar dados reais do Supabase.
+
+PROBLEMA ENCONTRADO NA PRIMEIRA EXECUÇÃO
+- O Chromium mostrou o pop-up sem o cartão branco/backdrop correto.
+- A causa era um bloco antigo do admin.css com sequências "\n" literais, então parte das regras do modal era ignorada pelo navegador.
+- Foram corrigidas 16 sequências e o CSS passou a ser interpretado normalmente.
+
+TESTE 1 — CONFIRMAR PAGAMENTO
+[OK] Pop-up abre no centro exato da tela em celular e desktop.
+[OK] Mostra nome Tamires, números 001, 002, 003, 004 e R$ 40,00.
+[OK] Campo da senha aparece no próprio pop-up.
+[OK] Senha errada 1111 mantém o pop-up aberto e mostra "Senha incorreta.".
+[OK] Senha correta 6253 fecha o pop-up e o pedido simulado passa para Pago.
+[OK] Posição da página foi preservada: deslocamento final 0 px em mobile e 0 px em desktop.
+
+TESTE 2 — ENVIAR CONFIRMAÇÃO PELO WHATSAPP
+[OK] Telefone do cliente Pago abre o pop-up de confirmação.
+[OK] Pop-up mostra nome, números, valor e WhatsApp.
+[OK] Exige senha 6253 antes de prosseguir.
+[OK] URL do WhatsApp gerada para 5511987654321 com a mensagem pronta.
+[OK] Mensagem contém confirmação do pagamento, números, Boa sorte, agradecimento e Que Deus abençoe.
+[OK] Posição da página foi preservada: 0 px de deslocamento em mobile e desktop.
+
+TESTE 3 — SEGUNDA TENTATIVA DE WHATSAPP
+[OK] Segunda tentativa mostra "Mensagem já enviada".
+[OK] Não pede senha novamente porque é somente um aviso informativo.
+[OK] Não cria um novo envio.
+
+TESTE VISUAL
+[OK] Mobile 390x844: cartão branco, fundo escurecido/desfocado, botões grandes e legíveis.
+[OK] Desktop 1365x768: modal centralizado e conteúdo legível.
+[OK] Nenhum erro JavaScript/console durante os dois testes.
+
+COMPARAÇÃO COM A VERSÃO ANTERIOR
+Arquivos preservados byte a byte:
+[OK] index.html
+[OK] js/admin.js
+[OK] js/app.js
+[OK] js/config.js
+[OK] css/styles.css
+[OK] admin.webmanifest
+[OK] supabase/functions/infinitepay-gateway/index.ts
+[OK] supabase/ATUALIZAR_ADMIN_POPUP_SENHA.sql
+
+Arquivos alterados para corrigir o problema visual:
+[OK] css/admin.css — correção das quebras de linha literais
+[OK] admin.html — apenas versão do CSS para evitar cache antigo
+[OK] admin-sw.js — cache do PWA atualizado para v7
+
+RESULTADO FINAL
+Após a correção, os testes reais no Chromium passaram em mobile e desktop.
+O pop-up ficou visualmente correto, centralizado e sem perder a posição da página.

@@ -1,0 +1,22 @@
+RIFA BENEFICENTE — DOAÇÕES + PAGAMENTO EM DINHEIRO
+
+ADMIN / DOAÇÕES
+- Novo campo para registrar doações recebidas sem compra de número.
+- O painel mostra Arrecadado com a rifa, Doações e Total arrecadado (rifa + doações).
+- Cada doação aparece no histórico e pode ser excluída se lançada por engano.
+- Registrar ou excluir doação usa o pop-up e exige a senha de ação 6253.
+
+PAGAMENTO EM DINHEIRO
+- Nova opção ao lado de InfinitePay e Pix pessoal.
+- O comprador informa para quem entregou o dinheiro e o telefone de quem recebeu.
+- Os números ficam PENDENTES sem expirar.
+- No Admin aparecem como Dinheiro, com nome e telefone de quem recebeu.
+- Você decide: Confirmar pagamento ou Não pagou • liberar.
+- A confirmação continua usando o pop-up com senha 6253.
+
+ATUALIZAÇÃO
+1. Supabase > SQL Editor: execute supabase/ATUALIZAR_DOACOES_E_DINHEIRO.sql inteiro.
+2. Edge Functions > infinitepay-gateway: substitua pelo index.ts desta versão e faça Deploy.
+3. Mantenha Verify JWT with legacy secret DESLIGADO.
+4. Publique a pasta completa no GitHub Pages.
+5. Faça Ctrl+F5. No PWA Admin, feche e abra o app.

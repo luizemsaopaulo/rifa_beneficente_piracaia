@@ -1,0 +1,26 @@
+CORREÇÃO DE TELEFONES / WHATSAPP
+
+Problema corrigido:
+- Ao digitar +55 no formulário, a máscara antiga tratava 55 como se fosse o DDD.
+- Exemplo: +55 11 99999-9999 podia virar (55) 11999-9999.
+- Isso gerava links errados no WhatsApp e também podia duplicar +55 na InfinitePay.
+
+Agora:
+- 11 99999-9999 e +55 11 99999-9999 viram o mesmo telefone.
+- +55 duplicado é corrigido automaticamente quando for inequívoco.
+- DDD inválido, celular incompleto e celular cujo primeiro dígito após o DDD não é 9 são bloqueados.
+- O Admin valida o telefone ANTES de registrar o envio único do WhatsApp.
+- Se um cadastro antigo estiver inválido, aparece "WhatsApp inválido" e o envio não é consumido.
+- A Edge Function repete a validação no servidor.
+
+ATUALIZAÇÃO
+1. Publique a pasta completa no GitHub.
+2. Atualize a Edge Function infinitepay-gateway com o index.ts desta versão e faça Deploy.
+3. Não precisa executar SQL.
+4. Mantenha Verify JWT with legacy secret desligado.
+5. Faça Ctrl+F5.
+6. Se usa o PWA Admin, feche e abra novamente.
+
+Observação:
+Esta correção impede novos telefones incorretos e detecta cadastros antigos inválidos.
+Ela não tenta adivinhar um número que já foi cadastrado faltando dígitos.
