@@ -11,8 +11,7 @@
     raffleState: null,
     ready: false,
     channel: null,
-    pending: loadPending(),
-    pixCountdownTimer: null
+    pending: loadPending()
   };
 
   const $ = (id) => document.getElementById(id);
@@ -61,9 +60,7 @@
     personalPixAmount: $("personalPixAmount"),
     personalPixNumbers: $("personalPixNumbers"),
     copyPixKey: $("copyPixKeyBtn"),
-    sendWhatsapp: $("sendWhatsappBtn"),
-    cancelPersonalPix: $("cancelPersonalPixBtn"),
-    personalPixCountdown: $("personalPixCountdown")
+    sendWhatsapp: $("sendWhatsappBtn")
   };
 
   function pad(n) { return String(n).padStart(3, "0"); }
@@ -97,6 +94,7 @@
   }
 
   function setConnection(text, ok = false) {
+    if (!el.badge) return;
     el.badge.textContent = text;
     el.badge.classList.toggle("connection-badge--ok", ok);
   }
@@ -228,6 +226,8 @@
   }
 
   function renderStats() {
+    if (!el.available || !el.paid || !el.progressBar || !el.progressText) return;
+
     const values = [...state.numbers.values()];
     const available = values.filter(v => v === "available").length;
     const paid = values.filter(v => v === "paid").length;
@@ -486,86 +486,12 @@
     }
   }
 
-  function stopPersonalPixCountdown() {
-    if (state.pixCountdownTimer) {
-      clearInterval(state.pixCountdownTimer);
-      state.pixCountdownTimer = null;
-    }
-  }
-
-  function startPersonalPixCountdown(expiresAt) {
-    stopPersonalPixCountdown();
-
-    const render = async () => {
-      const end = new Date(expiresAt || 0).getTime();
-      const diff = end - Date.now();
-
-      if (!Number.isFinite(end) || diff <= 0) {
-        el.personalPixCountdown.textContent = "00:00";
-        stopPersonalPixCountdown();
-        await releaseExpired();
-        const pending = loadPending();
-        if (pending?.order_nsu) {
-          const status = await checkPaymentStatus(pending.order_nsu, true);
-          if (status?.payment_status === "expired") {
-            el.personalPixPanel.classList.add("hidden");
-            showToast("O prazo terminou e os números foram liberados.", "normal");
-            await loadAll();
-          }
-        }
-        return;
-      }
-
-      const total = Math.ceil(diff / 1000);
-      const min = Math.floor(total / 60);
-      const sec = total % 60;
-      el.personalPixCountdown.textContent = `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
-    };
-
-    render();
-    state.pixCountdownTimer = setInterval(render, 1000);
-  }
-
-  async function cancelPersonalPixPurchase() {
-    const pending = loadPending();
-
-    if (!pending || pending.provider !== "personal_pix") {
-      showToast("Não encontrei um Pix pessoal em andamento.", "error");
-      return;
-    }
-
-    if (!confirm("Liberar agora os números deste pagamento?")) return;
-
-    el.cancelPersonalPix.disabled = true;
-    el.cancelPersonalPix.textContent = "Liberando...";
-
-    try {
-      await callGateway({
-        action: "cancel_personal_pix",
-        order_nsu: pending.order_nsu
-      });
-
-      stopPersonalPixCountdown();
-      savePending(null);
-      el.personalPixPanel.classList.add("hidden");
-      showToast("Compra cancelada. Os números estão disponíveis novamente.", "success");
-      await loadAll();
-    } catch (error) {
-      console.error(error);
-      showToast(error.message || "Não foi possível liberar os números.", "error");
-    } finally {
-      el.cancelPersonalPix.disabled = false;
-      el.cancelPersonalPix.textContent = "Não vou pagar — liberar números agora";
-    }
-  }
-
   function showPersonalPixPanel(order) {
     el.personalPixKey.textContent = cfg.personalPix.key;
     el.personalPixOwner.textContent = cfg.personalPix.owner;
     el.personalPixAmount.textContent = money(order.amount_cents);
     el.personalPixNumbers.textContent = (order.numbers || []).map(pad).join(", ");
     el.personalPixPanel.classList.remove("hidden");
-    startPersonalPixCountdown(order.expires_at);
     el.personalPixPanel.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -604,16 +530,10 @@
     }
 
     try {
-      const contacted = await callGateway({
+      await callGateway({
         action: "personal_pix_contacted",
         order_nsu: pending.order_nsu
       });
-
-      if (contacted?.expires_at) {
-        const updated = { ...pending, expires_at: contacted.expires_at };
-        savePending(updated);
-        startPersonalPixCountdown(contacted.expires_at);
-      }
     } catch (error) {
       console.warn(error);
     }
@@ -675,7 +595,6 @@
   });
 
   el.sendWhatsapp.addEventListener("click", sendPersonalPixWhatsapp);
-  el.cancelPersonalPix.addEventListener("click", cancelPersonalPixPurchase);
 
   el.form.addEventListener("submit", async event => {
     event.preventDefault();
@@ -705,8 +624,7 @@
           order_nsu: data.order_nsu,
           buyer_name: name,
           numbers: data.numbers || numbers,
-          amount_cents: data.amount_cents || numbers.length * cfg.unitPriceCents,
-          expires_at: data.expires_at
+          amount_cents: data.amount_cents || numbers.length * cfg.unitPriceCents
         };
 
         savePending(pending);
@@ -786,7 +704,6 @@
   }, 15000);
 
   window.addEventListener("beforeunload", () => {
-    stopPersonalPixCountdown();
     if (state.channel) db.removeChannel(state.channel);
   });
 })();

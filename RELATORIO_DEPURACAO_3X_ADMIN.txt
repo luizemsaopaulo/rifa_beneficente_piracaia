@@ -1,0 +1,40 @@
+RELATÓRIO DE DEPURAÇÃO - 3 PASSADAS
+================================================
+
+DEPURAÇÃO 1 — SINTAXE / PWA
+[OK] node --check admin.js
+[OK] node --check app.js
+[OK] node --check config.js
+[OK] node --check admin-sw.js
+[OK] manifest JSON válido
+[OK] admin-icon-192.png tamanho — (192, 192)
+[OK] admin-icon-512.png tamanho — (512, 512)
+[OK] manifest somente admin
+
+DEPURAÇÃO 2 — COMPARAÇÃO COM A VERSÃO ANTERIOR
+Arquivos mantidos byte a byte:
+[OK] index.html
+[OK] js/app.js
+[OK] js/config.js
+[OK] css/styles.css
+[OK] supabase/functions/infinitepay-gateway/index.ts
+[OK] ABRIR_RIFA.bat
+
+Alterados somente por necessidade do pedido:
+[OK] admin.html
+[OK] js/admin.js
+[OK] css/admin.css
+[OK] supabase/INSTALAR_SUPABASE.sql
+[OK] novos arquivos PWA + SQL de atualização
+
+DEPURAÇÃO 3 — TESTE LOCAL HTTP
+[OK] admin 200 e login
+[OK] modal confirmação
+[OK] botão instalar
+[OK] manifest start admin
+[OK] reativar no JS
+[OK] sessão lembrada
+[OK] público sem manifest
+
+RESULTADO: todas as 3 depurações passaram.
+Página pública, pagamentos, config e Edge Function permaneceram sem alteração.

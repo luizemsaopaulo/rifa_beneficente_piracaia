@@ -1,0 +1,54 @@
+RELATÓRIO DE DEPURAÇÃO — PIX PESSOAL MANUAL
+======================================================
+
+DEPURAÇÃO 1 — SINTAXE E FUNÇÕES
+[OK] app.js
+[OK] admin.js
+[OK] config.js
+[OK] admin-sw.js
+[OK] sem contador pix
+[OK] sem cancelamento cliente
+[OK] sem reativar admin
+[OK] admin confirmar
+[OK] admin não pagou
+[OK] edge sem cancelamento cliente
+[OK] pwa só admin
+
+DEPURAÇÃO 2 — COMPARAÇÃO BYTE A BYTE
+Arquivos mantidos sem alteração:
+[OK] js/config.js
+[OK] css/styles.css
+[OK] css/admin.css
+[OK] admin.webmanifest
+[OK] assets/admin-icon-192.png
+[OK] assets/admin-icon-512.png
+[OK] ABRIR_RIFA.bat
+[OK] ABRIR_ADMIN.bat
+
+Arquivos alterados somente pela nova regra/cache:
+[OK] index.html
+[OK] admin.html
+[OK] js/app.js
+[OK] js/admin.js
+[OK] admin-sw.js
+[OK] supabase/functions/infinitepay-gateway/index.ts
+[OK] supabase/INSTALAR_SUPABASE.sql
+[OK] Novo: supabase/ATUALIZAR_ADMIN_PWA_PIX_MANUAL.sql
+[OK] Novo: LEIA-ME_PIX_PESSOAL_MANUAL.txt
+
+DEPURAÇÃO 3 — DOM / BANCO / SESSÃO
+[OK] nenhum novo ID ausente público
+[OK] nenhum novo ID ausente admin
+[OK] sql zera prazo pendentes pessoais
+[OK] sql novo pix null
+[OK] sql remove reativar
+[OK] sql remove cancel cliente
+[OK] sessão pwa mantida
+[OK] senha não localstorage
+[OK] token sessão mantido
+
+RESULTADO FINAL
+As 3 depurações passaram.
+Pix pessoal fica Pendente sem prazo até decisão do Admin.
+Confirmar pagamento e Não pagou/liberar exigem confirmação.
+PWA Admin e sessão lembrada continuam preservados.

@@ -1,0 +1,15 @@
+RIFA BENEFICENTE - ATUALIZAÇÃO ADMIN
+======================================
+
+- Pedidos expirados: botão Reativar números por 2 horas.
+- Se algum número expirado já tiver sido usado, a reativação é bloqueada e informa conflito.
+- Confirmar pagamento e Reativar números abrem caixa de confirmação com comprador, números e valor.
+- PWA somente no admin.html. A página pública não possui manifest.
+- A senha não é salva em texto: após o primeiro login o Supabase cria um token de sessão salvo neste aparelho.
+- A sessão dura/renova por 180 dias. Ao clicar Sair, o token é apagado e invalidado.
+
+ATUALIZAÇÃO
+1. Execute supabase/ATUALIZAR_ADMIN_PWA_REATIVACAO.sql no SQL Editor.
+2. Não precisa alterar Edge Function.
+3. Publique todos os arquivos no GitHub.
+4. Abra admin.html e faça Ctrl+F5 uma vez.

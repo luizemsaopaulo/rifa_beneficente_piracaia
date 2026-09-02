@@ -4,10 +4,14 @@
   const cfg = window.RIFA_CONFIG;
   const db = window.supabaseClient;
 
+  const SESSION_KEY = "rifa_admin_session_v1";
+
   const state = {
-    password: "",
+    sessionToken: localStorage.getItem(SESSION_KEY) || "",
     dashboard: null,
-    channel: null
+    channel: null,
+    deferredInstallPrompt: null,
+    confirmResolver: null
   };
 
   const $ = (id) => document.getElementById(id);
@@ -44,7 +48,15 @@
     simulate: $("simulateDrawBtn"),
     simulationResult: $("simulationResult"),
     drawConfirm: $("drawConfirmInput"),
-    officialDraw: $("officialDrawBtn")
+    officialDraw: $("officialDrawBtn"),
+    installApp: $("installAdminAppBtn"),
+    confirmModal: $("adminConfirmModal"),
+    confirmIcon: $("adminConfirmIcon"),
+    confirmTitle: $("adminConfirmTitle"),
+    confirmMessage: $("adminConfirmMessage"),
+    confirmDetails: $("adminConfirmDetails"),
+    confirmCancel: $("adminConfirmCancelBtn"),
+    confirmOk: $("adminConfirmOkBtn")
   };
 
   const pad = (n) => String(n).padStart(3, "0");
@@ -91,34 +103,49 @@
   }
 
   async function rpc(name, args = {}) {
-    const { data, error } = await db.rpc(name, { p_password: state.password, ...args });
+    if (!state.sessionToken) throw new Error("Sessão administrativa não encontrada.");
+    const { data, error } = await db.rpc(`${name}_session`, { p_session_token: state.sessionToken, ...args });
     if (error) throw error;
     return data;
   }
 
+  function showPanel() { el.loginCard.classList.add("hidden"); el.panel.classList.remove("hidden"); }
+  function showLogin() { el.panel.classList.add("hidden"); el.loginCard.classList.remove("hidden"); }
+  function clearSession() { state.sessionToken = ""; localStorage.removeItem(SESSION_KEY); }
+  function reservationById(id) { return (state.dashboard?.reservations || []).find(r => String(r.id) === String(id)); }
+  function reservationDetails(r) {
+    if (!r) return "";
+    const nums = (r.numbers || []).map(pad).join(", ");
+    return `<strong>${escapeHtml(r.buyer_name || "")}</strong><br>Números: <strong>${escapeHtml(nums)}</strong><br>Valor: <strong>${escapeHtml(money(r.expected_amount_cents))}</strong>`;
+  }
+  function confirmAction({ title="Confirmar ação", message="", details="", confirmText="Confirmar", icon="?", danger=false } = {}) {
+    return new Promise(resolve => {
+      state.confirmResolver=resolve; el.confirmIcon.textContent=icon; el.confirmTitle.textContent=title; el.confirmMessage.textContent=message;
+      el.confirmOk.textContent=confirmText; el.confirmOk.classList.toggle("button--danger",danger); el.confirmOk.classList.toggle("button--primary",!danger);
+      if(details){ el.confirmDetails.innerHTML=details; el.confirmDetails.classList.remove("hidden"); } else { el.confirmDetails.innerHTML=""; el.confirmDetails.classList.add("hidden"); }
+      el.confirmModal.classList.remove("hidden"); el.confirmModal.setAttribute("aria-hidden","false"); setTimeout(()=>el.confirmCancel.focus(),20);
+    });
+  }
+  function closeConfirmModal(result) {
+    el.confirmModal.classList.add("hidden"); el.confirmModal.setAttribute("aria-hidden","true");
+    const resolver=state.confirmResolver; state.confirmResolver=null; if(resolver) resolver(Boolean(result));
+  }
+  async function restoreSession() {
+    if(!state.sessionToken) return;
+    try { await refreshDashboard(); showPanel(); subscribeAdminRealtime(); showToast("Sessão restaurada neste aparelho.","success"); }
+    catch(error){ console.warn("Sessão salva inválida:",error); clearSession(); showLogin(); }
+  }
+
   async function login(event) {
     event.preventDefault();
-    const password = el.password.value;
-    if (!password) return;
-
-    state.password = password;
-
+    const password=el.password.value; if(!password) return;
     try {
-      await refreshDashboard();
-      el.password.value = "";
-      el.loginCard.classList.add("hidden");
-      el.panel.classList.remove("hidden");
-      subscribeAdminRealtime();
-      showToast("Painel liberado.", "success");
-    } catch (error) {
-      console.error(error);
-      state.password = "";
-      if (/relation|function|schema cache|does not exist/i.test(error.message || "")) {
-        el.setupWarning.classList.remove("hidden");
-      }
-      showToast(error.message || "Senha incorreta.", "error");
-      el.password.select();
-    }
+      const {data,error}=await db.rpc("admin_login_session",{p_password:password}); if(error) throw error;
+      if(!data?.session_token) throw new Error("Não foi possível criar a sessão administrativa.");
+      state.sessionToken=data.session_token; localStorage.setItem(SESSION_KEY,state.sessionToken);
+      await refreshDashboard(); el.password.value=""; showPanel(); subscribeAdminRealtime();
+      showToast("Painel liberado e sessão salva neste aparelho.","success");
+    } catch(error){ console.error(error); clearSession(); if(/relation|function|schema cache|does not exist/i.test(error.message||"")) el.setupWarning.classList.remove("hidden"); showToast(error.message||"Senha incorreta.","error"); el.password.select(); }
   }
 
   async function refreshDashboard() {
@@ -196,22 +223,32 @@
     });
   }
 
-  function statusBadge(status) {
+  function statusBadge(status, provider = "") {
     if (status === "paid") return '<span class="payment-badge payment-badge--paid">Pago</span>';
     if (status === "expired") return '<span class="payment-badge payment-badge--expired">Expirado</span>';
+    if (provider === "personal_pix") return '<span class="payment-badge payment-badge--pending">Pendente</span>';
     return '<span class="payment-badge payment-badge--pending">Em pagamento</span>';
   }
 
   function actionsHtml(r) {
     const paid = r.payment_status === "paid";
+    const personalPix = r.payment_provider === "personal_pix";
+
+    if (personalPix && !paid) {
+      return `
+        <div class="row-actions">
+          <button class="mini-button mini-button--success" data-payment="${r.id}" data-paid="true">Confirmar pagamento</button>
+          <button class="mini-button mini-button--danger" data-cancel="${r.id}" data-not-paid="true">Não pagou • liberar</button>
+        </div>`;
+    }
+
     return `
       <div class="row-actions">
         <button class="mini-button ${paid ? "mini-button--soft" : "mini-button--success"}" data-payment="${r.id}" data-paid="${paid ? "false" : "true"}">
-          ${paid ? "Voltar p/ em pagamento" : "Confirmar pagamento"}
+          ${paid ? (personalPix ? "Voltar p/ pendente" : "Voltar p/ em pagamento") : "Confirmar pagamento"}
         </button>
         <button class="mini-button mini-button--danger" data-cancel="${r.id}">Cancelar</button>
-      </div>
-    `;
+      </div>`;
   }
 
   function renderBuyers() {
@@ -229,7 +266,7 @@
         <td>${escapeHtml(formatPhone(r.whatsapp))}</td>
         <td><div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div></td>
         <td><strong>${money(r.expected_amount_cents)}</strong></td>
-        <td>${statusBadge(r.payment_status)}</td>
+        <td>${statusBadge(r.payment_status, r.payment_provider)}</td>
         <td>${paymentInfo(r)}</td>
         <td>${escapeHtml(formatDate(r.created_at))}</td>
         <td>${actionsHtml(r)}</td>
@@ -240,7 +277,7 @@
       <article class="buyer-card">
         <div class="buyer-card__head">
           <div><strong>${escapeHtml(r.buyer_name)}</strong><small>${escapeHtml(formatPhone(r.whatsapp))}</small></div>
-          ${statusBadge(r.payment_status)}
+          ${statusBadge(r.payment_status, r.payment_provider)}
         </div>
         <div class="table-numbers">${(r.numbers || []).map(n => `<span>${pad(n)}</span>`).join("")}</div>
         <p><strong>${money(r.expected_amount_cents)}</strong> • ${r.payment_provider === "personal_pix" ? "Pix pessoal" : "InfinitePay"}</p>
@@ -257,31 +294,47 @@
       btn.addEventListener("click", async () => {
         const id = btn.dataset.payment;
         const paid = btn.dataset.paid === "true";
-        const action = paid ? "confirmar o pagamento" : "voltar este pedido para pagamento em andamento";
-        if (!confirm(`Deseja ${action}?`)) return;
-
+        const r = reservationById(id);
+        const personalPix = r?.payment_provider === "personal_pix";
+        const ok = await confirmAction({
+          title: paid ? "Confirmar pagamento?" : (personalPix ? "Voltar para pendente?" : "Desmarcar pagamento?"),
+          message: paid
+            ? "Confirme somente se você verificou que o pagamento realmente foi recebido."
+            : (personalPix ? "Os números voltarão a ficar Pendentes e continuarão bloqueados até uma nova decisão sua." : "O pedido voltará para o status Em pagamento."),
+          details: reservationDetails(r),
+          confirmText: paid ? "Sim, confirmar pagamento" : (personalPix ? "Sim, voltar para pendente" : "Sim, voltar para em pagamento"),
+          icon: paid ? "✓" : "↩",
+          danger: !paid
+        });
+        if (!ok) return;
         try {
           await rpc("admin_set_payment", { p_reservation_id: id, p_paid: paid });
           await refreshDashboard();
-          showToast(paid ? "Pagamento confirmado." : "Pagamento desmarcado.", "success");
-        } catch (error) {
-          showToast(error.message, "error");
-        }
+          showToast(paid ? "Pagamento confirmado." : (personalPix ? "Pedido voltou para Pendente." : "Pagamento desmarcado."), "success");
+        } catch (error) { showToast(error.message, "error"); }
       });
     });
 
     document.querySelectorAll("[data-cancel]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.dataset.cancel;
-        if (!confirm("Liberar os números deste pedido?")) return;
-
+        const r = reservationById(id);
+        const notPaid = btn.dataset.notPaid === "true";
+        const personalPix = r?.payment_provider === "personal_pix";
+        const ok = await confirmAction({
+          title: notPaid ? "Confirmar que não pagou?" : "Cancelar este pedido?",
+          message: notPaid ? "Os números serão liberados imediatamente e poderão ser escolhidos por outra pessoa." : "Os números deste pedido serão liberados.",
+          details: reservationDetails(r),
+          confirmText: notPaid ? "Sim, não pagou • liberar" : "Sim, cancelar pedido",
+          icon: "!",
+          danger: true
+        });
+        if (!ok) return;
         try {
           await rpc("admin_cancel_reservation", { p_reservation_id: id });
           await refreshDashboard();
-          showToast("Pedido cancelado e números liberados.", "success");
-        } catch (error) {
-          showToast(error.message, "error");
-        }
+          showToast(personalPix && notPaid ? "Marcado como não pago. Números liberados." : "Pedido cancelado e números liberados.", "success");
+        } catch (error) { showToast(error.message, "error"); }
       });
     });
   }
@@ -397,17 +450,30 @@
       .subscribe();
   }
 
-  function logout() {
-    state.password = "";
-    state.dashboard = null;
-    if (state.channel) db.removeChannel(state.channel);
-    state.channel = null;
-    el.panel.classList.add("hidden");
-    el.loginCard.classList.remove("hidden");
-    el.password.focus();
+  async function logout() {
+    const token=state.sessionToken; clearSession(); state.dashboard=null;
+    if(state.channel) db.removeChannel(state.channel); state.channel=null;
+    if(token){ try { await db.rpc("admin_logout_session",{p_session_token:token}); } catch(error){ console.warn("Falha ao invalidar sessão:",error); } }
+    showLogin(); el.password.focus(); showToast("Sessão encerrada neste aparelho.","normal");
+  }
+
+  function isStandalone(){ return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true; }
+  async function installAdminApp(){
+    const promptEvent=state.deferredInstallPrompt; if(!promptEvent){ showToast("A opção de instalação ainda não está disponível neste navegador.","normal"); return; }
+    promptEvent.prompt(); await promptEvent.userChoice; state.deferredInstallPrompt=null; el.installApp.classList.add("hidden");
+  }
+  function setupPwa(){
+    if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("./admin-sw.js",{scope:"./"}).catch(error=>console.warn("Service Worker não registrado:",error));
+    if(isStandalone()){ el.installApp.classList.add("hidden"); return; }
+    window.addEventListener("beforeinstallprompt",event=>{ event.preventDefault(); state.deferredInstallPrompt=event; el.installApp.classList.remove("hidden"); });
+    window.addEventListener("appinstalled",()=>{ state.deferredInstallPrompt=null; el.installApp.classList.add("hidden"); showToast("Painel Admin instalado.","success"); });
   }
 
   el.loginForm.addEventListener("submit", login);
+  el.installApp.addEventListener("click", installAdminApp);
+  el.confirmCancel.addEventListener("click", () => closeConfirmModal(false));
+  el.confirmOk.addEventListener("click", () => closeConfirmModal(true));
+  el.confirmModal.querySelector(".admin-confirm-modal__backdrop").addEventListener("click", () => closeConfirmModal(false));
   el.refresh.addEventListener("click", () => refreshDashboard().catch(e => showToast(e.message, "error")));
   el.logout.addEventListener("click", logout);
   el.toggleSales.addEventListener("click", toggleSales);
@@ -419,4 +485,7 @@
     el.officialDraw.disabled = el.drawConfirm.value.trim().toUpperCase() !== "SORTEAR";
   });
   el.officialDraw.addEventListener("click", officialDraw);
+  document.addEventListener("keydown", event => { if(event.key === "Escape" && !el.confirmModal.classList.contains("hidden")) closeConfirmModal(false); });
+  setupPwa();
+  restoreSession();
 })();

@@ -170,16 +170,6 @@ async function markPersonalPixContacted(orderNsu: string) {
 
 
 
-async function cancelPersonalPix(orderNsu: string) {
-  if (!orderNsu) throw new Error("Pedido não informado.");
-
-  const { data, error } = await db.rpc("cancel_personal_pix_pending", {
-    p_order_nsu: orderNsu,
-  });
-
-  if (error) throw error;
-  return data;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -198,10 +188,6 @@ Deno.serve(async (req) => {
 
     if (body?.action === "personal_pix_contacted") {
       return json(await markPersonalPixContacted(String(body.order_nsu || "")));
-    }
-
-    if (body?.action === "cancel_personal_pix") {
-      return json(await cancelPersonalPix(String(body.order_nsu || "")));
     }
 
     if (body?.action === "confirm") {

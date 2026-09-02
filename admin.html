@@ -5,9 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#18181b">
   <meta name="robots" content="noindex,nofollow">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Rifa Admin">
+  <link rel="manifest" href="admin.webmanifest?v=20260902-1">
+  <link rel="icon" sizes="192x192" href="assets/admin-icon-192.png">
+  <link rel="apple-touch-icon" href="assets/admin-icon-192.png">
   <title>Painel Admin • Rifa Beneficente</title>
   <link rel="stylesheet" href="css/styles.css?v=20260901-2">
-  <link rel="stylesheet" href="css/admin.css?v=20260901-2">
+  <link rel="stylesheet" href="css/admin.css?v=20260902-2">
 </head>
 <body class="admin-body">
   <header class="admin-topbar">
@@ -16,7 +23,10 @@
         <span class="eyebrow">PAINEL DO ORGANIZADOR</span>
         <h1>Rifa Beneficente</h1>
       </div>
-      <a href="index.html" class="button button--soft">← Ver página pública</a>
+      <div class="admin-topbar__actions">
+        <button id="installAdminAppBtn" class="button button--install hidden" type="button">📲 Instalar app</button>
+        <a href="index.html" class="button button--soft">← Ver página pública</a>
+      </div>
     </div>
   </header>
 
@@ -24,7 +34,7 @@
     <section id="loginCard" class="card login-card">
       <span class="kicker">ACESSO PROTEGIDO</span>
       <h2>Entrar no painel</h2>
-      <p>A senha é validada no Supabase e não fica gravada no JavaScript do site.</p>
+      <p>A senha é validada no Supabase. Depois do primeiro acesso, este aparelho fica conectado por uma sessão segura, para você não precisar digitar a senha toda vez.</p>
       <form id="adminLoginForm" class="admin-login-form">
         <label>
           Senha do organizador
@@ -170,10 +180,25 @@
     </div>
   </main>
 
+  
+  <div id="adminConfirmModal" class="admin-confirm-modal hidden" aria-hidden="true">
+    <div class="admin-confirm-modal__backdrop"></div>
+    <div class="admin-confirm-modal__dialog" role="alertdialog" aria-modal="true" aria-labelledby="adminConfirmTitle">
+      <div id="adminConfirmIcon" class="admin-confirm-modal__icon">?</div>
+      <h2 id="adminConfirmTitle">Confirmar ação</h2>
+      <p id="adminConfirmMessage"></p>
+      <div id="adminConfirmDetails" class="admin-confirm-modal__details hidden"></div>
+      <div class="admin-confirm-modal__actions">
+        <button id="adminConfirmCancelBtn" class="button button--soft" type="button">Voltar</button>
+        <button id="adminConfirmOkBtn" class="button button--primary" type="button">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=20260901-2"></script>
-  <script src="js/admin.js?v=20260901-2"></script>
+  <script src="js/admin.js?v=20260902-2"></script>
 </body>
 </html>

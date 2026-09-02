@@ -1,0 +1,14 @@
+RIFA BENEFICENTE — PIX PESSOAL MANUAL
+======================================
+
+Pix pessoal fica PENDENTE sem prazo até decisão manual do Admin.
+No Admin: Confirmar pagamento ou Não pagou • liberar. Ambas pedem confirmação.
+InfinitePay continua automático. PWA Admin e sessão lembrada continuam.
+
+ATUALIZAÇÃO:
+1. Rode supabase/ATUALIZAR_ADMIN_PWA_PIX_MANUAL.sql no SQL Editor.
+2. Atualize infinitepay-gateway com o index.ts desta versão e faça Deploy.
+3. Verify JWT continua desligado.
+4. Publique no GitHub e faça Ctrl+F5.
+
+Pedidos Pix pessoal já PENDENTES também deixam de expirar. Pedidos já EXPIRADOS não são reativados automaticamente.

@@ -82,34 +82,12 @@
         </div>
       </div>
     </section>
-
-    <section class="status-panel card">
-      <div class="status-panel__head">
-        <div>
-          <span class="kicker">ACOMPANHAMENTO EM TEMPO REAL</span>
-          <h2>Andamento da rifa</h2>
-        </div>
-        <span id="connectionBadge" class="connection-badge">Conectando...</span>
-      </div>
-
-      <div class="stats">
-        <div class="stat stat--available"><span>Disponíveis agora</span><strong id="availableCount">200</strong></div>
-        <div class="stat stat--paid"><span>Pagos</span><strong id="paidCount">0</strong></div>
-        <div class="stat"><span>Valor por número</span><strong>R$ 10</strong></div>
-        <div class="stat"><span>Total</span><strong>200</strong></div>
-      </div>
-
-      <div class="progress">
-        <div id="progressBar" class="progress__bar"></div>
-      </div>
-      <small id="progressText" class="progress__text">0 de 200 números pagos.</small>
-    </section>
-
     <section class="card">
       <div class="section-head">
         <div>
           <span class="kicker">1. ESCOLHA SEUS NÚMEROS</span>
           <h2>Selecione um ou mais números</h2>
+          <p class="form-help"><strong>R$ 10,00</strong> cada número.</p>
         </div>
         <button id="clearSelectionBtn" class="button button--soft" type="button">Limpar seleção</button>
       </div>
@@ -193,25 +171,17 @@
         </div>
 
         <div class="pix-actions">
-          <div class="pix-timeout-box">
-            <span>Tempo para concluir o Pix</span>
-            <strong id="personalPixCountdown">10:00</strong>
-            <small>Se não houver confirmação, os números voltam automaticamente para Disponível.</small>
-          </div>
-
           <button id="copyPixKeyBtn" class="button button--soft button--large" type="button">Copiar chave Pix</button>
           <button id="sendWhatsappBtn" class="button button--whatsapp button--large" type="button">
             Já paguei — enviar meus números no WhatsApp
           </button>
-          <button id="cancelPersonalPixBtn" class="button button--cancel-payment" type="button">
-            Não vou pagar — liberar números agora
-          </button>
-        </div>
+          </div>
       </div>
 
       <p class="pix-note">
         Depois de fazer o Pix, use o botão do WhatsApp. A mensagem já vai com seu nome, os números escolhidos,
-        o valor e o código do pedido. Após a conferência, o organizador marca os números como <strong>Pagos</strong>.
+        o valor e o código do pedido. Seus números ficam <strong>Pendentes</strong> até o organizador conferir:
+        se o pagamento for confirmado, ficam seus; se não houver pagamento, o organizador libera manualmente.
       </p>
     </section>
 
@@ -315,7 +285,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=20260901-4"></script>
-  <script src="js/app.js?v=20260901-4"></script>
+  <script src="js/config.js?v=20260902-2"></script>
+  <script src="js/app.js?v=20260902-2"></script>
 </body>
 </html>

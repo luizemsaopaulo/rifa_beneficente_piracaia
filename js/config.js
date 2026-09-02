@@ -6,8 +6,8 @@ window.RIFA_CONFIG = {
   drawAt: "2026-10-18T20:00:00-03:00",
   drawDateText: "18/10/2026",
   drawTimeText: "20h",
-  instagramHandle: "@TUDO.DEHELENA",
-  instagramUrl: "https://www.instagram.com/tudo.dehelena?utm_source=qr&igsi=MWl6Y2lvYmtieDYwaQ==",
+  instagramHandle: "@TUDODEHELENA",
+  instagramUrl: "https://www.instagram.com/TUDODEHELENA/",
   reports: {
     g1: "https://g1.globo.com/sp/vale-do-paraiba-regiao/noticia/2026/09/01/temporal-com-granizo-gigante-destelha-mais-de-400-casas-e-destroi-carros-em-piracaia-sp.ghtml",
     youtube: "https://www.youtube.com/watch?v=E1zrlKCCSYE"
